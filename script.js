@@ -1,6 +1,7 @@
 // --- VARIABLES GLOBALES ---
 let secretWord = "";
 let currentRow = 0;
+let isGameActive = true;
 const MAX_TRIES = 5;
 
 // --- ELEMENTOS DEL DOM ---
@@ -8,7 +9,6 @@ const MAX_TRIES = 5;
 const setupContainer = document.getElementById('setup-container');
 const secretWordInput = document.getElementById('secret-word-input');
 const startGameBtn = document.getElementById('start-game-btn');
-const setupError = document.getElementById('setup-error');
 
 // Fase 2: Juego
 const gameContainer = document.getElementById('game-container');
@@ -19,184 +19,190 @@ const gameMessage = document.getElementById('game-message');
 
 // Fase 3: Reinicio
 const resetBtn = document.getElementById('reset-btn');
+// ELIMINADO: const shareBtn = document.getElementById('share-btn');
+
+// Modo Oscuro y Toasts
+const darkModeToggle = document.getElementById('dark-mode-toggle');
+const toastContainer = document.getElementById('toast-container');
 
 // --- EVENT LISTENERS ---
 
-// Botón para iniciar el juego (Fase 1)
-startGameBtn.addEventListener('click', startGame);
-
-// Botón para enviar intento (Fase 2)
-guessBtn.addEventListener('click', handleGuess);
-
-// Permitir enviar intento con la tecla "Enter"
-guessInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        handleGuess();
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('dark-mode') === 'true') {
+        document.body.classList.add('dark-mode');
+        darkModeToggle.textContent = '☀️';
     }
 });
 
-// Botón para jugar de nuevo (Fase 3)
+darkModeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    localStorage.setItem('dark-mode', isDarkMode);
+    darkModeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+});
+
+startGameBtn.addEventListener('click', startGame);
+
+guessBtn.addEventListener('click', handleGuess);
+guessInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleGuess();
+});
+
 resetBtn.addEventListener('click', resetGame);
+// ELIMINADO: shareBtn.addEventListener('click', shareResult);
+
+
+// --- FUNCIÓN: Notificaciones Toast ---
+function showToast(message, type = 'error') {
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    if (type === 'success') {
+        toast.classList.add('success');
+    }
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 
 // --- FUNCIONES DEL JUEGO ---
 
-/**
- * FASE 1: Iniciar el Juego
- * Valida la palabra secreta y cambia a la Fase 2.
- */
 function startGame() {
     const word = secretWordInput.value.trim().toUpperCase();
 
-    // Validación de 5 letras
     if (word.length !== 5) {
-        setupError.textContent = "¡La palabra debe tener exactamente 5 letras!";
+        showToast("¡La palabra debe tener exactamente 5 letras!");
+        return;
+    }
+    if (!/^[A-Z]+$/.test(word)) {
+        showToast("¡La palabra solo debe contener letras!");
         return;
     }
 
-    // Almacenamos la palabra y cambiamos de vista
     secretWord = word;
-    setupError.textContent = "";
+    isGameActive = true;
     
-    // Ocultar Fase 1 y mostrar Fase 2
     setupContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     
-    // Enfocar el campo de adivinanza para el Retado
     guessInput.focus();
 }
 
-/**
- * FASE 2: Manejar un Intento
- * Valida la palabra del retado y la procesa.
- */
 function handleGuess() {
+    if (!isGameActive) return;
+
     const guess = guessInput.value.trim().toUpperCase();
 
-    // Validación de 5 letras
     if (guess.length !== 5) {
-        gameMessage.textContent = "¡Tu intento debe tener 5 letras!";
+        showToast("¡Tu intento debe tener 5 letras!");
         return;
     }
 
-    // Procesar el intento
+    isGameActive = false;
     processGuess(guess);
 
-    // Limpiar el campo de entrada
     guessInput.value = "";
 }
 
-/**
- * FASE 2: Procesar el Intento
- * Compara la palabra con la secreta y colorea la cuadrícula.
- */
 function processGuess(guess) {
-    // Obtener la fila actual de la cuadrícula
     const row = gameGrid.children[currentRow];
     
-    // Usamos un mapa de frecuencia para manejar letras repetidas (lógica de Wordle)
     const secretWordMap = {};
     for (const letter of secretWord) {
         secretWordMap[letter] = (secretWordMap[letter] || 0) + 1;
     }
 
-    // Array para almacenar los estados (correct, present, absent)
     const cellStates = Array(5).fill('absent');
 
-    // 1er Pase: Buscar letras "Correctas" (Verdes)
     for (let i = 0; i < 5; i++) {
         const letter = guess[i];
         if (letter === secretWord[i]) {
             cellStates[i] = 'correct';
-            secretWordMap[letter]--; // Reducir la cuenta de esta letra
+            secretWordMap[letter]--;
         }
     }
 
-    // 2do Pase: Buscar letras "Presentes" (Amarillas)
     for (let i = 0; i < 5; i++) {
-        // Si ya es verde, saltar
         if (cellStates[i] === 'correct') continue;
-
         const letter = guess[i];
         if (secretWord.includes(letter) && secretWordMap[letter] > 0) {
             cellStates[i] = 'present';
-            secretWordMap[letter]--; // Reducir la cuenta
+            secretWordMap[letter]--;
         }
     }
 
-    // Aplicar los estilos a las celdas
     for (let i = 0; i < 5; i++) {
         const cell = row.children[i];
-        cell.textContent = guess[i];
-        cell.classList.add(`cell-${cellStates[i]}`);
+        
+        setTimeout(() => {
+            cell.textContent = guess[i];
+            cell.classList.add('cell-reveal');
+            cell.classList.add(`cell-${cellStates[i]}`);
+        }, i * 300);
     }
 
-    // Pasar a la siguiente fila
-    currentRow++;
-
-    // Comprobar si el juego terminó
-    checkGameEnd(guess);
+    const animationDuration = 5 * 300 + 600;
+    setTimeout(() => {
+        checkGameEnd(guess);
+    }, animationDuration);
 }
 
-/**
- * FASE 3: Comprobar Fin del Juego (Victoria o Derrota)
- */
 function checkGameEnd(guess) {
-    // Condición de Victoria
     if (guess === secretWord) {
         gameMessage.textContent = "¡Felicidades, Ganaste!";
         endGame();
         return;
     }
 
-    // Condición de Derrota (se acabaron los intentos)
+    currentRow++;
+
     if (currentRow === MAX_TRIES) {
         gameMessage.textContent = `Perdiste. La palabra era: ${secretWord}`;
         endGame();
         return;
     }
+
+    isGameActive = true;
+    guessInput.focus();
 }
 
-/**
- * FASE 3: Acciones de Fin de Juego
- * Deshabilita entradas y muestra el botón de reinicio.
- */
 function endGame() {
+    isGameActive = false;
     guessInput.disabled = true;
     guessBtn.disabled = true;
     resetBtn.classList.remove('hidden');
+    // ELIMINADO: shareBtn.classList.remove('hidden');
 }
 
-/**
- * FASE 3: Reiniciar el Juego
- * Vuelve todo al estado inicial (Fase 1).
- */
 function resetGame() {
-    // Resetear variables
     secretWord = "";
     currentRow = 0;
+    isGameActive = true;
 
-    // Resetear interfaz Fase 1
     setupContainer.classList.remove('hidden');
     secretWordInput.value = "";
-    setupError.textContent = "";
 
-    // Resetear interfaz Fase 2
     gameContainer.classList.add('hidden');
     gameMessage.textContent = "";
     guessInput.value = "";
     guessInput.disabled = false;
     guessBtn.disabled = false;
 
-    // Ocultar botón de reinicio
     resetBtn.classList.add('hidden');
+    // ELIMINADO: shareBtn.classList.add('hidden');
 
-    // Limpiar la cuadrícula
     for (let i = 0; i < MAX_TRIES; i++) {
         const row = gameGrid.children[i];
         for (let j = 0; j < 5; j++) {
             const cell = row.children[j];
             cell.textContent = "";
-            cell.classList.remove('cell-correct', 'cell-present', 'cell-absent');
+            cell.classList.remove('cell-correct', 'cell-present', 'cell-absent', 'cell-reveal');
         }
     }
 }
+
+// ELIMINADO: La función completa 'shareResult()' ha sido borrada.
