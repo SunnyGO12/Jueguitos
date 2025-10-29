@@ -1,0 +1,124 @@
+/* Estilos generales */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+/* Contenedores de Fases */
+#setup-container, #game-container {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+
+/* Ocultar elementos */
+.hidden {
+    display: none;
+}
+
+/* Estilos de Inputs y Botones */
+input[type="text"], input[type="password"] {
+    width: 200px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* La Cuadrícula (Grid) */
+#game-grid {
+    display: grid;
+    grid-template-rows: repeat(5, 1fr); /* 5 filas */
+    gap: 5px;
+    margin: 20px 0;
+}
+
+.grid-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 columnas */
+    gap: 5px;
+}
+
+.grid-cell {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    /* Transición suave para el color */
+    transition: background-color 0.5s, color 0.5s;
+}
+
+/* Colores de estado de las celdas */
+.cell-correct {
+    background-color: #6aaa64; /* Verde */
+    color: white;
+    border-color: #6aaa64;
+}
+
+.cell-present {
+    background-color: #c9b458; /* Amarillo */
+    color: white;
+    border-color: #c9b458;
+}
+
+.cell-absent {
+    background-color: #787c7e; /* Gris */
+    color: white;
+    border-color: #787c7e;
+}
+
+/* Mensajes de error y estado */
+.error-message {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+#game-message {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+#reset-btn {
+    background-color: #5cb85c;
+}
+
+#reset-btn:hover {
+    background-color: #4cae4c;
+}
