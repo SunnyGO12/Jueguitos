@@ -1,124 +1,371 @@
-/* Estilos generales */
+/* NUEVO: Importación de Fuente y Reseteo Básico */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* NUEVO: Variables de Color (Esquema de color refinado) */
+:root {
+    --font-main: 'Nunito', sans-serif;
+
+    /* Modo Claro */
+    --color-bg-light: #f7f8fa;
+    --color-text-light: #333;
+    --color-container-bg-light: #ffffff;
+    --color-border-light: #d3d6da;
+    --color-dashboard-bg: #ffffff;
+    --color-dashboard-text: #555;
+    --color-dashboard-hover: #f0f0f0;
+
+    /* Modo Oscuro */
+    --color-bg-dark: #121213;
+    --color-text-dark: #f8f8f8;
+    --color-container-bg-dark: #1A1A1B;
+    --color-border-dark: #3a3a3c;
+    --color-dashboard-bg-dark: #1A1A1B;
+    --color-dashboard-text-dark: #d7dadc;
+    --color-dashboard-hover-dark: #272729;
+
+    /* Colores Wordle (constantes) */
+    --color-correct: #6aaa64;
+    --color-present: #c9b458;
+    --color-absent-light: #787c7e;
+    --color-absent-dark: #3a3a3c;
+    --color-white: #ffffff;
+
+    /* Colores UI */
+    --color-btn: var(--color-correct); /* Botón principal es verde */
+    --color-btn-hover: #5a9a54;
+    --color-btn-text: var(--color-white);
+
+    /* Colores Toast */
+    --color-toast-error-bg: #d9534f;
+    --color-toast-success-bg: #5cb85c;
+}
+
+/* --- ESTILOS GENERALES Y NUEVO LAYOUT --- */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: var(--font-main);
+    display: flex; /* NUEVO: Layout de 2 columnas */
+    min-height: 100vh;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-light);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* --- NUEVO: Dashboard (Panel Izquierdo) --- */
+#dashboard-nav {
+    width: 240px;
+    flex-shrink: 0; /* Evita que se encoja */
+    background-color: var(--color-dashboard-bg);
+    border-right: 1px solid var(--color-border-light);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.dashboard-header {
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.dashboard-header h2 {
+    color: var(--color-text-light);
+}
+
+.dashboard-menu {
+    list-style: none;
+}
+
+.dashboard-menu li a {
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: var(--color-dashboard-text);
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.dashboard-menu li a:hover {
+    background-color: var(--color-dashboard-hover);
+}
+
+.dashboard-menu li a.active {
+    background-color: var(--color-btn);
+    color: var(--color-white);
+}
+
+/* --- NUEVO: Contenido Principal (Panel Derecho) --- */
+#main-content {
+    flex-grow: 1; /* Ocupa el resto del espacio */
+    padding: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    margin: 0;
+    position: relative; /* Para posicionar el botón de modo oscuro */
+    overflow-y: auto; /* Permite scroll si el contenido es muy alto */
 }
 
-h1, h2 {
-    color: #333;
+h1 {
+    font-weight: 700;
+    margin-bottom: 25px;
 }
 
-/* Contenedores de Fases */
+/* --- MODO OSCURO (Refinado) --- */
+body.dark-mode {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-dark);
+}
+
+body.dark-mode #dashboard-nav {
+    background-color: var(--color-dashboard-bg-dark);
+    border-right-color: var(--color-border-dark);
+}
+
+body.dark-mode .dashboard-header {
+    border-bottom-color: var(--color-border-dark);
+}
+
+body.dark-mode .dashboard-header h2 {
+    color: var(--color-text-dark);
+}
+
+body.dark-mode .dashboard-menu li a {
+    color: var(--color-dashboard-text-dark);
+}
+
+body.dark-mode .dashboard-menu li a:hover {
+    background-color: var(--color-dashboard-hover-dark);
+}
+
+/* --- Contenedores del Juego (Estilos refinados) --- */
 #setup-container, #game-container {
-    background-color: #ffffff;
+    background-color: var(--color-container-bg-light);
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    border: 1px solid var(--color-border-light);
     text-align: center;
     width: 90%;
-    max-width: 400px;
+    max-width: 420px; /* Un poco más ancho */
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
-/* Ocultar elementos */
+body.dark-mode #setup-container,
+body.dark-mode #game-container {
+    background-color: var(--color-container-bg-dark);
+    border-color: var(--color-border-dark);
+}
+
 .hidden {
     display: none;
 }
 
-/* Estilos de Inputs y Botones */
+/* Inputs y Botones (Estilos refinados) */
 input[type="text"], input[type="password"] {
     width: 200px;
     padding: 10px;
     font-size: 16px;
-    border: 2px solid #ddd;
+    font-family: var(--font-main);
+    border: 2px solid var(--color-border-light);
+    background-color: transparent; /* Fondo transparente */
+    color: var(--color-text-light);
     border-radius: 5px;
     text-align: center;
     text-transform: uppercase;
+    transition: border-color 0.3s, color 0.3s;
+}
+input[type="text"]:focus, input[type="password"]:focus {
+    outline: none;
+    border-color: var(--color-btn);
+}
+
+body.dark-mode input[type="text"], 
+body.dark-mode input[type="password"] {
+    border-color: var(--color-border-dark);
+    color: var(--color-text-dark);
 }
 
 button {
     padding: 10px 20px;
     font-size: 16px;
-    background-color: #007bff;
-    color: white;
+    font-family: var(--font-main);
+    font-weight: 600;
+    background-color: var(--color-btn);
+    color: var(--color-btn-text);
     border: none;
     border-radius: 5px;
     cursor: pointer;
     margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 5px;
+    transition: background-color 0.2s;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: var(--color-btn-hover);
 }
 
-/* La Cuadrícula (Grid) */
+/* --- CUADRÍCULA (Ajustes de color) --- */
 #game-grid {
     display: grid;
-    grid-template-rows: repeat(5, 1fr); /* 5 filas */
+    grid-template-rows: repeat(5, 1fr);
     gap: 5px;
-    margin: 20px 0;
+    margin: 20px auto; /* Centrado */
+    width: 300px; /* Ancho fijo para centrar bien */
 }
 
 .grid-row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 columnas */
+    grid-template-columns: repeat(5, 1fr);
     gap: 5px;
 }
 
 .grid-cell {
-    width: 50px;
-    height: 50px;
-    border: 2px solid #ccc;
+    width: 56px; /* Ajustado al ancho fijo */
+    height: 56px;
+    border: 2px solid var(--color-border-light);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 700;
     text-transform: uppercase;
-    /* Transición suave para el color */
-    transition: background-color 0.5s, color 0.5s;
+    transition: transform 0.6s, background-color 0.6s, border-color 0.6s;
 }
 
-/* Colores de estado de las celdas */
+body.dark-mode .grid-cell {
+    border-color: var(--color-border-dark);
+}
+
+/* Animación de Volteo (Sin cambios) */
+.cell-reveal {
+    animation: flip 0.6s ease forwards;
+}
+
+@keyframes flip {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+}
+
+/* Colores de estado (Ajustados para Modo Oscuro/Claro) */
 .cell-correct {
-    background-color: #6aaa64; /* Verde */
-    color: white;
-    border-color: #6aaa64;
+    background-color: var(--color-correct);
+    color: var(--color-white);
+    border-color: var(--color-correct);
 }
-
 .cell-present {
-    background-color: #c9b458; /* Amarillo */
-    color: white;
-    border-color: #c9b458;
+    background-color: var(--color-present);
+    color: var(--color-white);
+    border-color: var(--color-present);
 }
-
 .cell-absent {
-    background-color: #787c7e; /* Gris */
-    color: white;
-    border-color: #787c7e;
+    background-color: var(--color-absent-light);
+    color: var(--color-white);
+    border-color: var(--color-absent-light);
+}
+body.dark-mode .cell-absent {
+    background-color: var(--color-absent-dark);
+    border-color: var(--color-absent-dark);
 }
 
-/* Mensajes de error y estado */
-.error-message {
-    color: #d9534f;
-    font-weight: bold;
-}
 
+/* --- MENSAJES Y BOTONES DE FIN --- */
 #game-message {
     font-size: 1.2em;
-    font-weight: bold;
+    font-weight: 600;
     margin-top: 15px;
+    min-height: 1.5em; /* Espacio reservado */
 }
-
+#end-game-buttons {
+    display: flex;
+    justify-content: center;
+}
 #reset-btn {
-    background-color: #5cb85c;
+    background-color: var(--color-absent-light);
+}
+body.dark-mode #reset-btn {
+    background-color: var(--color-absent-dark);
+}
+#reset-btn:hover {
+    opacity: 0.8;
 }
 
-#reset-btn:hover {
-    background-color: #4cae4c;
+/* Botón Modo Oscuro (Reposicionado) */
+#dark-mode-toggle {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    margin: 0;
+    color: var(--color-text-light);
+}
+body.dark-mode #dark-mode-toggle {
+    color: var(--color-text-dark);
+}
+
+/* Notificaciones Toast (Sin cambios, pero hereda nueva fuente) */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    /* Ahora centrado relativo al main-content, no a la página */
+    left: calc(240px + (100vw - 240px) / 2); /* 240px del sidebar + la mitad del resto */
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.toast {
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: white;
+    font-weight: 600;
+    background-color: var(--color-toast-error-bg);
+    animation: slide-in 0.3s ease forwards, fade-out 0.5s ease 2.5s forwards;
+}
+.toast.success {
+    background-color: var(--color-toast-success-bg);
+}
+@keyframes slide-in {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* NUEVO: Media Query para Móviles */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column; /* Apila el dashboard y el contenido */
+    }
+    
+    #dashboard-nav {
+        width: 100%; /* Ancho completo */
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border-light);
+        flex-direction: row; /* Menú horizontal */
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+    }
+    
+    body.dark-mode #dashboard-nav {
+        border-bottom-color: var(--color-border-dark);
+    }
 }
