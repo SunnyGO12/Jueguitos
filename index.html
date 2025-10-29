@@ -3,71 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wordle para Dos</title>
+    <title>Dashboard de Juegos | Wordle</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Wordle para Dos Jugadores</h1>
+    <nav id="dashboard-nav">
+        <div class="dashboard-header">
+            <h2>🎮 Juegos</h2>
+        </div>
+        <ul class="dashboard-menu">
+            <li><a href="#" class="active">Wordle para Dos</a></li>
+            <li><a href="#">Juego 2 (Próximamente)</a></li>
+            <li><a href="#">Juego 3 (Próximamente)</a></li>
+        </ul>
+    </nav>
 
-    <div id="setup-container">
-        <h2>Hola Retador,</h2>
-        <p>Escribe la palabra secreta de 5 letras:</p>
-        <input type="password" id="secret-word-input" maxlength="5">
-        <button id="start-game-btn">¡Listo! Ocultar palabra</button>
-        <p id="setup-error" class="error-message"></p>
-    </div>
+    <main id="main-content">
 
-    <div id="game-container" class="hidden">
-        <h2>Hola Retado, ¡Adivina!</h2>
-        
-        <div id="game-grid">
-            <div class="grid-row">
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-            </div>
-            <div class="grid-row">
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-            </div>
-            <div class="grid-row">
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-            </div>
-            <div class="grid-row">
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-            </div>
-            <div class="grid-row">
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-                <div class="grid-cell"></div>
-            </div>
+        <button id="dark-mode-toggle">🌙</button>
+
+        <div id="toast-container"></div>
+
+        <h1>Wordle para Dos Jugadores</h1>
+
+        <div id="setup-container">
+            <h2>Hola Retador,</h2>
+            <p>Escribe la palabra secreta de 5 letras:</p>
+            <input type="password" id="secret-word-input" maxlength="5">
+            <button id="start-game-btn">¡Listo! Ocultar palabra</button>
         </div>
 
-        <div id="guess-input-area">
-            <input type="text" id="guess-input" maxlength="5" placeholder="Escribe 5 letras...">
-            <button id="guess-btn">Intentar</button>
+        <div id="game-container" class="hidden">
+            <h2>Hola Retado, ¡Adivina!</h2>
+            
+            <div id="game-grid">
+                <div class="grid-row">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+                <div class="grid-row">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+                <div class="grid-row">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+                <div class="grid-row">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+                <div class="grid-row">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+            </div>
+
+            <div id="guess-input-area">
+                <input type="text" id="guess-input" maxlength="5" placeholder="Escribe 5 letras...">
+                <button id="guess-btn">Intentar</button>
+            </div>
+
+            <p id="game-message"></p>
+
+            <div id="end-game-buttons">
+                <button id="reset-btn" class="hidden">Jugar de nuevo</button>
+            </div>
         </div>
-
-        <p id="game-message"></p>
-
-        <button id="reset-btn" class="hidden">Jugar de nuevo</button>
-    </div>
+    </main>
 
     <script src="script.js"></script>
 </body>
