@@ -1,4 +1,4 @@
-/* NUEVO: Importación de Fuente y Reseteo Básico */
+/* Importación de Fuente y Reseteo Básico */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
 
 * {
@@ -7,7 +7,7 @@
     box-sizing: border-box;
 }
 
-/* NUEVO: Variables de Color (Esquema de color refinado) */
+/* Variables de Color (Esquema de color refinado) */
 :root {
     --font-main: 'Nunito', sans-serif;
 
@@ -49,14 +49,14 @@
 /* --- ESTILOS GENERALES Y NUEVO LAYOUT --- */
 body {
     font-family: var(--font-main);
-    display: flex; /* NUEVO: Layout de 2 columnas */
+    display: flex; /* Layout de 2 columnas */
     min-height: 100vh;
     background-color: var(--color-bg-light);
     color: var(--color-text-light);
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* --- NUEVO: Dashboard (Panel Izquierdo) --- */
+/* --- Dashboard (Panel Izquierdo) --- */
 #dashboard-nav {
     width: 240px;
     flex-shrink: 0; /* Evita que se encoja */
@@ -101,7 +101,7 @@ body {
     color: var(--color-white);
 }
 
-/* --- NUEVO: Contenido Principal (Panel Derecho) --- */
+/* --- Contenido Principal (Panel Derecho) --- */
 #main-content {
     flex-grow: 1; /* Ocupa el resto del espacio */
     padding: 30px;
@@ -153,7 +153,7 @@ body.dark-mode .dashboard-menu li a:hover {
     border: 1px solid var(--color-border-light);
     text-align: center;
     width: 90%;
-    max-width: 420px; /* Un poco más ancho */
+    max-width: 420px; /* REVERTIDO: Ancho original */
     transition: background-color 0.3s, border-color 0.3s;
 }
 
@@ -192,6 +192,21 @@ body.dark-mode input[type="password"] {
     color: var(--color-text-dark);
 }
 
+/* REVERTIDO: Estilos para el input de adivinanza */
+#guess-input-area {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+/* Asegurarnos que el input y botón se vean bien */
+#guess-input-area input {
+    margin: 0;
+}
+#guess-input-area button {
+    margin: 0;
+}
+
 button {
     padding: 10px 20px;
     font-size: 16px;
@@ -212,7 +227,7 @@ button:hover {
     background-color: var(--color-btn-hover);
 }
 
-/* --- CUADRÍCULA (Ajustes de color) --- */
+/* --- CUADRÍCULA --- */
 #game-grid {
     display: grid;
     grid-template-rows: repeat(5, 1fr);
@@ -237,14 +252,14 @@ button:hover {
     font-size: 24px;
     font-weight: 700;
     text-transform: uppercase;
-    transition: transform 0.6s, background-color 0.6s, border-color 0.6s;
+    transition: transform 0.6s, background-color 0.6s, border-color 0.6s, color 0.6s;
 }
 
 body.dark-mode .grid-cell {
     border-color: var(--color-border-dark);
 }
 
-/* Animación de Volteo (Sin cambios) */
+/* Animación de Volteo (Flip) */
 .cell-reveal {
     animation: flip 0.6s ease forwards;
 }
@@ -254,6 +269,32 @@ body.dark-mode .grid-cell {
     50% { transform: scaleY(0); }
     100% { transform: scaleY(1); }
 }
+
+/* --- Animaciones de Feedback --- */
+
+/* 1. Animación de Sacudida (Shake) para Errores */
+.shake {
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* 2. Animación de Victoria (Júbilo) */
+.jubilation {
+    animation: jubilation 0.8s ease forwards;
+}
+
+@keyframes jubilation {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.2) rotate(-5deg); }
+    50% { transform: scale(1.2) rotate(5deg); }
+    75% { transform: scale(1.2) rotate(0deg); }
+}
+
 
 /* Colores de estado (Ajustados para Modo Oscuro/Claro) */
 .cell-correct {
@@ -315,11 +356,10 @@ body.dark-mode #dark-mode-toggle {
     color: var(--color-text-dark);
 }
 
-/* Notificaciones Toast (Sin cambios, pero hereda nueva fuente) */
+/* Notificaciones Toast */
 #toast-container {
     position: fixed;
     top: 20px;
-    /* Ahora centrado relativo al main-content, no a la página */
     left: calc(240px + (100vw - 240px) / 2); /* 240px del sidebar + la mitad del resto */
     transform: translateX(-50%);
     z-index: 1000;
@@ -348,7 +388,10 @@ body.dark-mode #dark-mode-toggle {
     to { opacity: 0; transform: translateY(-20px); }
 }
 
-/* NUEVO: Media Query para Móviles */
+/* ELIMINADO: Todos los estilos de #keyboard-container y .key */
+
+
+/* --- Media Query para Móviles --- */
 @media (max-width: 768px) {
     body {
         flex-direction: column; /* Apila el dashboard y el contenido */
@@ -368,4 +411,80 @@ body.dark-mode #dark-mode-toggle {
     body.dark-mode #dashboard-nav {
         border-bottom-color: var(--color-border-dark);
     }
+
+    .dashboard-header {
+        margin: 0;
+        padding: 0;
+        border: none;
+    }
+    
+    .dashboard-menu {
+        display: flex; /* Links en fila */
+        gap: 10px;
+    }
+    .dashboard-menu li a {
+        padding: 8px 12px;
+    }
+
+    #main-content {
+        padding: 20px;
+    }
+
+    #dark-mode-toggle {
+        /* Se queda en el dashboard en móviles */
+        position: static; 
+        order: 3; /* Moverlo al final */
+        margin-left: 10px;
+    }
+
+    #toast-container {
+        /* Re-centrar el toast */
+        left: 50%;
+        width: 90%;
+    }
+    
+    #game-container {
+        max-width: 100%; /* Ocupar todo el ancho */
+        padding: 15px;
+    }
+    
+    /* ELIMINADO: Ajustes del teclado para móviles */
+
+    /* Ajustes de la cuadrícula para móviles */
+    #game-grid {
+        width: 280px; /* Más pequeño */
+        gap: 4px;
+    }
+    .grid-cell {
+        width: 52px;
+        height: 52px;
+    }
+
+    /* REVERTIDO: Ajustes para el input en móviles */
+    #guess-input-area {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+    #guess-input-area input {
+        width: 100%;
+        max-width: 280px;
+    }
+    #guess-input-area button {
+        width: 100%;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 380px) {
+    /* Ajustes más finos para pantallas muy pequeñas */
+    #game-grid {
+        width: 250px;
+    }
+    .grid-cell {
+        width: 46px;
+        height: 46px;
+    }
+    
+    /* ELIMINADO: Ajustes de teclas */
 }
