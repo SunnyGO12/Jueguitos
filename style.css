@@ -178,10 +178,22 @@ body.dark-mode .lobby-section {
 #game-code-display p {
     margin-bottom: 10px;
 }
-#game-code-text {
+
+/* Estilos para el Enlace de Compartir */
+.share-link-wrapper {
+    display: flex; /* Pone el input y el botón en la misma línea */
+    gap: 10px; /* Espacio entre ellos */
     width: 100%;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+#game-code-text {
+    flex-grow: 1; /* El input ocupa el espacio sobrante */
+    width: auto;
+    margin: 0;
+    font-size: 1em; /* Hacemos la fuente un poco más pequeña para que quepa */
     text-align: center;
-    font-size: 1.2em;
     font-weight: bold;
     padding: 10px;
     background-color: var(--color-bg-light);
@@ -193,6 +205,20 @@ body.dark-mode #game-code-text {
     background-color: var(--color-bg-dark);
     color: var(--color-text-dark);
     border-color: var(--color-border-dark);
+}
+
+#copy-code-btn {
+    margin: 0; /* Resetea el margen del botón */
+    flex-shrink: 0; /* Evita que el botón se encoja */
+    background-color: var(--color-absent-light); /* Color gris */
+}
+
+body.dark-mode #copy-code-btn {
+    background-color: var(--color-absent-dark);
+}
+
+#copy-code-btn:hover {
+    opacity: 0.8;
 }
 
 
@@ -494,6 +520,10 @@ body.dark-mode #dark-mode-toggle {
     #guess-input-area button {
         width: 100%;
         max-width: 280px;
+    }
+    
+    .share-link-wrapper {
+        flex-direction: column;
     }
 }
 
