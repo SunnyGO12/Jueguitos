@@ -1,308 +1,123 @@
-/* Importación de Fuente y Reseteo Básico */
+/* ... (Todo el CSS hasta 'Inputs y Botones' sigue igual) ... */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Variables de Color (Esquema de color refinado) */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
     --font-main: 'Nunito', sans-serif;
-
-    /* Modo Claro */
-    --color-bg-light: #f7f8fa;
-    --color-text-light: #333;
-    --color-container-bg-light: #ffffff;
-    --color-border-light: #d3d6da;
-    --color-dashboard-bg: #ffffff;
-    --color-dashboard-text: #555;
-    --color-dashboard-hover: #f0f0f0;
-
-    /* Modo Oscuro */
-    --color-bg-dark: #121213;
-    --color-text-dark: #f8f8f8;
-    --color-container-bg-dark: #1A1A1B;
-    --color-border-dark: #3a3a3c;
-    --color-dashboard-bg-dark: #1A1A1B;
-    --color-dashboard-text-dark: #d7dadc;
-    --color-dashboard-hover-dark: #272729;
-
-    /* Colores Wordle (constantes) */
-    --color-correct: #6aaa64;
-    --color-present: #c9b458;
-    --color-absent-light: #787c7e;
-    --color-absent-dark: #3a3a3c;
-    --color-white: #ffffff;
-
-    /* Colores UI */
-    --color-btn: var(--color-correct); /* Botón principal es verde */
-    --color-btn-hover: #5a9a54;
-    --color-btn-text: var(--color-white);
-
-    /* Colores Toast */
-    --color-toast-error-bg: #d9534f;
+    --color-bg-light: #f7f8fa; --color-text-light: #333; --color-container-bg-light: #ffffff;
+    --color-border-light: #d3d6da; --color-dashboard-bg: #ffffff; --color-dashboard-text: #555;
+    --color-dashboard-hover: #f0f0f0; --color-bg-dark: #121213; --color-text-dark: #f8f8f8;
+    --color-container-bg-dark: #1A1A1B; --color-border-dark: #3a3a3c; --color-dashboard-bg-dark: #1A1A1B;
+    --color-dashboard-text-dark: #d7dadc; --color-dashboard-hover-dark: #272729;
+    --color-correct: #6aaa64; --color-present: #c9b458; --color-absent-light: #787c7e;
+    --color-absent-dark: #3a3a3c; --color-white: #ffffff; --color-btn: var(--color-correct);
+    --color-btn-hover: #5a9a54; --color-btn-text: var(--color-white); --color-toast-error-bg: #d9534f;
     --color-toast-success-bg: #5cb85c;
 }
-
-/* --- ESTILOS GENERALES Y NUEVO LAYOUT --- */
 body {
-    font-family: var(--font-main);
-    display: flex; /* Layout de 2 columnas */
-    min-height: 100vh;
-    background-color: var(--color-bg-light);
-    color: var(--color-text-light);
+    font-family: var(--font-main); display: flex; min-height: 100vh;
+    background-color: var(--color-bg-light); color: var(--color-text-light);
     transition: background-color 0.3s, color 0.3s;
 }
-
-/* --- Dashboard (Panel Izquierdo) --- */
 #dashboard-nav {
-    width: 240px;
-    flex-shrink: 0; /* Evita que se encoja */
-    background-color: var(--color-dashboard-bg);
-    border-right: 1px solid var(--color-border-light);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    transition: background-color 0.3s, border-color 0.3s;
+    width: 240px; flex-shrink: 0; background-color: var(--color-dashboard-bg);
+    border-right: 1px solid var(--color-border-light); padding: 20px; display: flex;
+    flex-direction: column; transition: background-color 0.3s, border-color 0.3s;
 }
-
 .dashboard-header {
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--color-border-light);
+    padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--color-border-light);
 }
-
-.dashboard-header h2 {
-    color: var(--color-text-light);
-}
-
-.dashboard-menu {
-    list-style: none;
-}
-
+.dashboard-header h2 { color: var(--color-text-light); }
+.dashboard-menu { list-style: none; }
 .dashboard-menu li a {
-    display: block;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: var(--color-dashboard-text);
-    border-radius: 8px;
-    font-weight: 600;
-    transition: background-color 0.2s, color 0.2s;
+    display: block; padding: 12px 15px; text-decoration: none; color: var(--color-dashboard-text);
+    border-radius: 8px; font-weight: 600; transition: background-color 0.2s, color 0.2s;
 }
-
-.dashboard-menu li a:hover {
-    background-color: var(--color-dashboard-hover);
-}
-
-.dashboard-menu li a.active {
-    background-color: var(--color-btn);
-    color: var(--color-white);
-}
-
-/* --- Contenido Principal (Panel Derecho) --- */
+.dashboard-menu li a:hover { background-color: var(--color-dashboard-hover); }
+.dashboard-menu li a.active { background-color: var(--color-btn); color: var(--color-white); }
 #main-content {
-    flex-grow: 1; /* Ocupa el resto del espacio */
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative; /* Para posicionar el botón de modo oscuro */
-    overflow-y: auto; /* Permite scroll si el contenido es muy alto */
+    flex-grow: 1; padding: 30px; display: flex; flex-direction: column;
+    align-items: center; position: relative; overflow-y: auto;
 }
-
-h1 {
-    font-weight: 700;
-    margin-bottom: 25px;
-}
-
-/* --- MODO OSCURO (Refinado) --- */
-body.dark-mode {
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-dark);
-}
-
+h1 { font-weight: 700; margin-bottom: 25px; }
+body.dark-mode { background-color: var(--color-bg-dark); color: var(--color-text-dark); }
 body.dark-mode #dashboard-nav {
-    background-color: var(--color-dashboard-bg-dark);
-    border-right-color: var(--color-border-dark);
+    background-color: var(--color-dashboard-bg-dark); border-right-color: var(--color-border-dark);
 }
-
-body.dark-mode .dashboard-header {
-    border-bottom-color: var(--color-border-dark);
-}
-
-body.dark-mode .dashboard-header h2 {
-    color: var(--color-text-dark);
-}
-
-body.dark-mode .dashboard-menu li a {
-    color: var(--color-dashboard-text-dark);
-}
-
-body.dark-mode .dashboard-menu li a:hover {
-    background-color: var(--color-dashboard-hover-dark);
-}
-
-/* --- Contenedores del Juego (Estilos refinados) --- */
+body.dark-mode .dashboard-header { border-bottom-color: var(--color-border-dark); }
+body.dark-mode .dashboard-header h2 { color: var(--color-text-dark); }
+body.dark-mode .dashboard-menu li a { color: var(--color-dashboard-text-dark); }
+body.dark-mode .dashboard-menu li a:hover { background-color: var(--color-dashboard-hover-dark); }
 #setup-container, #game-container, #lobby-container {
-    background-color: var(--color-container-bg-light);
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    border: 1px solid var(--color-border-light);
-    text-align: center;
-    width: 90%;
-    max-width: 420px; 
+    background-color: var(--color-container-bg-light); padding: 25px; border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--color-border-light);
+    text-align: center; width: 90%; max-width: 420px; 
     transition: background-color 0.3s, border-color 0.3s;
 }
-
-body.dark-mode #setup-container,
-body.dark-mode #game-container,
-body.dark-mode #lobby-container {
-    background-color: var(--color-container-bg-dark);
-    border-color: var(--color-border-dark);
+body.dark-mode #setup-container, body.dark-mode #game-container, body.dark-mode #lobby-container {
+    background-color: var(--color-container-bg-dark); border-color: var(--color-border-dark);
 }
-
-/* --- Estilos del Lobby --- */
 .lobby-section {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--color-border-light);
+    margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light);
 }
-
-body.dark-mode .lobby-section {
-    border-top-color: var(--color-border-dark);
-}
-
-#game-code-display p {
-    margin-bottom: 10px;
-}
-#game-code-display p:first-of-type {
-    font-weight: 600;
-}
-
-/* Estilo para el código de 5 letras */
+body.dark-mode .lobby-section { border-top-color: var(--color-border-dark); }
+#game-code-display p { margin-bottom: 10px; }
+#game-code-display p:first-of-type { font-weight: 600; }
 .room-code-display {
-    font-size: 2.5em;
-    font-weight: 700;
-    color: var(--color-btn);
-    letter-spacing: 4px;
-    margin: 10px 0;
+    font-size: 2.5em; font-weight: 700; color: var(--color-btn);
+    letter-spacing: 4px; margin: 10px 0;
 }
-
-/* Estilos para el Enlace de Compartir */
 .share-link-wrapper {
-    display: flex; /* Pone el input y el botón en la misma línea */
-    gap: 10px; /* Espacio entre ellos */
-    width: 100%;
-    margin-top: 5px;
-    margin-bottom: 10px;
+    display: flex; gap: 10px; width: 100%; margin-top: 5px; margin-bottom: 10px;
 }
-
 #game-link-text {
-    flex-grow: 1; /* El input ocupa el espacio sobrante */
-    width: auto;
-    margin: 0;
-    font-size: 1em; 
-    text-align: center;
-    font-weight: bold;
-    padding: 10px;
-    background-color: var(--color-bg-light);
-    color: var(--color-text-light);
+    flex-grow: 1; width: auto; margin: 0; font-size: 1em; text-align: center; font-weight: bold;
+    padding: 10px; background-color: var(--color-bg-light); color: var(--color-text-light);
     border: 1px dashed var(--color-border-light);
 }
-
 body.dark-mode #game-link-text {
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-dark);
-    border-color: var(--color-border-dark);
+    background-color: var(--color-bg-dark); color: var(--color-text-dark); border-color: var(--color-border-dark);
 }
-
 #copy-link-btn {
-    margin: 0; /* Resetea el margen del botón */
-    flex-shrink: 0; /* Evita que el botón se encoja */
-    background-color: var(--color-absent-light); /* Color gris */
+    margin: 0; flex-shrink: 0; background-color: var(--color-absent-light);
 }
-
-body.dark-mode #copy-link-btn {
-    background-color: var(--color-absent-dark);
-}
-
-#copy-link-btn:hover {
-    opacity: 0.8;
-}
-
-
-.hidden {
-    display: none;
-}
-
-/* Inputs y Botones (Estilos refinados) */
+body.dark-mode #copy-link-btn { background-color: var(--color-absent-dark); }
+#copy-link-btn:hover { opacity: 0.8; }
+.hidden { display: none; }
 input[type="text"], input[type="password"] {
-    width: 200px;
-    padding: 10px;
-    font-size: 16px;
-    font-family: var(--font-main);
-    border: 2px solid var(--color-border-light);
-    background-color: transparent; /* Fondo transparente */
-    color: var(--color-text-light);
-    border-radius: 5px;
-    text-align: center;
-    text-transform: uppercase;
-    transition: border-color 0.3s, color 0.3s;
+    width: 200px; padding: 10px; font-size: 16px; font-family: var(--font-main);
+    border: 2px solid var(--color-border-light); background-color: transparent;
+    color: var(--color-text-light); border-radius: 5px; text-align: center;
+    text-transform: uppercase; transition: border-color 0.3s, color 0.3s;
 }
 input[type="text"]:focus, input[type="password"]:focus {
-    outline: none;
-    border-color: var(--color-btn);
+    outline: none; border-color: var(--color-btn);
 }
-
-body.dark-mode input[type="text"], 
-body.dark-mode input[type="password"] {
-    border-color: var(--color-border-dark);
-    color: var(--color-text-dark);
+body.dark-mode input[type="text"], body.dark-mode input[type="password"] {
+    border-color: var(--color-border-dark); color: var(--color-text-dark);
 }
-
 #guess-input-area {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
+    margin-top: 20px; display: flex; justify-content: center; gap: 10px;
 }
-#guess-input-area input {
-    margin: 0;
-}
-#guess-input-area button {
-    margin: 0;
-}
-
+#guess-input-area input { margin: 0; }
+#guess-input-area button { margin: 0; }
 button {
-    padding: 10px 20px;
-    font-size: 16px;
-    font-family: var(--font-main);
-    font-weight: 600;
-    background-color: var(--color-btn);
-    color: var(--color-btn-text);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
-    margin-left: 5px;
-    margin-right: 5px;
-    transition: background-color 0.2s;
+    padding: 10px 20px; font-size: 16px; font-family: var(--font-main); font-weight: 600;
+    background-color: var(--color-btn); color: var(--color-btn-text); border: none;
+    border-radius: 5px; cursor: pointer; margin-top: 10px; margin-left: 5px;
+    margin-right: 5px; transition: background-color 0.2s;
 }
+button:hover { background-color: var(--color-btn-hover); }
 
-button:hover {
-    background-color: var(--color-btn-hover);
-}
-
-/* --- CUADRÍCULA --- */
+/* --- SECCIÓN DE CUADRÍCULA ACTUALIZADA --- */
 #game-grid {
     display: grid;
     grid-template-rows: repeat(5, 1fr);
     gap: 5px;
     margin: 20px auto; /* Centrado */
-    width: 300px; /* Ancho fijo para centrar bien */
+    
+    /* Autoajuste: Ocupa el 90% del ancho, pero no más de 320px */
+    width: 90%;
+    max-width: 320px; 
 }
 
 .grid-row {
@@ -312,13 +127,15 @@ button:hover {
 }
 
 .grid-cell {
-    width: 56px; /* Ajustado al ancho fijo */
-    height: 56px;
+    /* Autoajuste: Quita ancho/alto fijos y usa aspect-ratio */
+    width: 100%;
+    aspect-ratio: 1 / 1; /* Mantiene la celda cuadrada */
+    
     border: 2px solid var(--color-border-light);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 2rem; /* Fuente más grande, relativa al root */
     font-weight: 700;
     text-transform: uppercase;
     transition: transform 0.6s, background-color 0.6s, border-color 0.6s, color 0.6s;
@@ -327,224 +144,93 @@ button:hover {
 body.dark-mode .grid-cell {
     border-color: var(--color-border-dark);
 }
-
-/* Animación de Volteo (Flip) */
-.cell-reveal {
-    animation: flip 0.6s ease forwards;
-}
-
-@keyframes flip {
-    0% { transform: scaleY(1); }
-    50% { transform: scaleY(0); }
-    100% { transform: scaleY(1); }
-}
-
-/* --- Animaciones de Feedback --- */
-.shake {
-    animation: shake 0.5s ease;
-}
-
+/* ... (El resto de animaciones y clases de color siguen igual) ... */
+.cell-reveal { animation: flip 0.6s ease forwards; }
+@keyframes flip { 0% { transform: scaleY(1); } 50% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+.shake { animation: shake 0.5s ease; }
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
-
-.jubilation {
-    animation: jubilation 0.8s ease forwards;
-}
-
+.jubilation { animation: jubilation 0.8s ease forwards; }
 @keyframes jubilation {
-    0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.2) rotate(-5deg); }
-    50% { transform: scale(1.2) rotate(5deg); }
-    75% { transform: scale(1.2) rotate(0deg); }
+    0%, 100% { transform: scale(1); } 25% { transform: scale(1.2) rotate(-5deg); }
+    50% { transform: scale(1.2) rotate(5deg); } 75% { transform: scale(1.2) rotate(0deg); }
 }
-
-
-/* Colores de estado (Ajustados para Modo Oscuro/Claro) */
 .cell-correct {
-    background-color: var(--color-correct);
-    color: var(--color-white);
-    border-color: var(--color-correct);
+    background-color: var(--color-correct); color: var(--color-white); border-color: var(--color-correct);
 }
 .cell-present {
-    background-color: var(--color-present);
-    color: var(--color-white);
-    border-color: var(--color-present);
+    background-color: var(--color-present); color: var(--color-white); border-color: var(--color-present);
 }
 .cell-absent {
-    background-color: var(--color-absent-light);
-    color: var(--color-white);
-    border-color: var(--color-absent-light);
+    background-color: var(--color-absent-light); color: var(--color-white); border-color: var(--color-absent-light);
 }
 body.dark-mode .cell-absent {
-    background-color: var(--color-absent-dark);
-    border-color: var(--color-absent-dark);
+    background-color: var(--color-absent-dark); border-color: var(--color-absent-dark);
 }
-
-
-/* --- MENSAJES Y BOTONES DE FIN --- */
 #game-message {
-    font-size: 1.2em;
-    font-weight: 600;
-    margin-top: 15px;
-    min-height: 1.5em; /* Espacio reservado */
+    font-size: 1.2em; font-weight: 600; margin-top: 15px; min-height: 1.5em;
 }
-#end-game-buttons {
-    display: flex;
-    justify-content: center;
-}
-#reset-btn {
-    background-color: var(--color-absent-light);
-}
-body.dark-mode #reset-btn {
-    background-color: var(--color-absent-dark);
-}
-#reset-btn:hover {
-    opacity: 0.8;
-}
-
-/* Botón Modo Oscuro (Reposicionado) */
+#end-game-buttons { display: flex; justify-content: center; }
+#reset-btn { background-color: var(--color-absent-light); }
+body.dark-mode #reset-btn { background-color: var(--color-absent-dark); }
+#reset-btn:hover { opacity: 0.8; }
 #dark-mode-toggle {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    font-size: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    margin: 0;
-    color: var(--color-text-light);
+    position: absolute; top: 20px; right: 30px; font-size: 20px; background: none;
+    border: none; cursor: pointer; padding: 5px; margin: 0; color: var(--color-text-light);
 }
-body.dark-mode #dark-mode-toggle {
-    color: var(--color-text-dark);
-}
-
-/* Notificaciones Toast */
+body.dark-mode #dark-mode-toggle { color: var(--color-text-dark); }
 #toast-container {
-    position: fixed;
-    top: 20px;
-    left: calc(240px + (100vw - 240px) / 2); /* 240px del sidebar + la mitad del resto */
-    transform: translateX(-50%);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    position: fixed; top: 20px; left: calc(240px + (100vw - 240px) / 2);
+    transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
 }
 .toast {
-    padding: 10px 20px;
-    border-radius: 5px;
-    color: white;
-    font-weight: 600;
+    padding: 10px 20px; border-radius: 5px; color: white; font-weight: 600;
     background-color: var(--color-toast-error-bg);
     animation: slide-in 0.3s ease forwards, fade-out 0.5s ease 2.5s forwards;
 }
-.toast.success {
-    background-color: var(--color-toast-success-bg);
-}
-@keyframes slide-in {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; transform: translateY(-20px); }
-}
+.toast.success { background-color: var(--color-toast-success-bg); }
+@keyframes slide-in { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
 
 /* --- Media Query para Móviles --- */
 @media (max-width: 768px) {
-    body {
-        flex-direction: column; /* Apila el dashboard y el contenido */
-    }
-    
+    /* ... (El dashboard se ajusta igual que antes) ... */
+    body { flex-direction: column; }
     #dashboard-nav {
-        width: 100%; /* Ancho completo */
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--color-border-light);
-        flex-direction: row; /* Menú horizontal */
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 15px;
+        width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border-light);
+        flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 15px;
     }
+    body.dark-mode #dashboard-nav { border-bottom-color: var(--color-border-dark); }
+    .dashboard-header { margin: 0; padding: 0; border: none; }
+    .dashboard-menu { display: flex; gap: 10px; }
+    .dashboard-menu li a { padding: 8px 12px; }
+    #main-content { padding: 20px; }
+    #dark-mode-toggle { position: static; order: 3; margin-left: 10px; }
+    #toast-container { left: 50%; width: 90%; }
+    #game-container, #lobby-container { max-width: 100%; padding: 15px; }
     
-    body.dark-mode #dashboard-nav {
-        border-bottom-color: var(--color-border-dark);
-    }
-
-    .dashboard-header {
-        margin: 0;
-        padding: 0;
-        border: none;
-    }
+    /* Autoajuste: Ya no necesitamos anchos fijos para el grid aquí */
+    /* El max-width: 320px y width: 90% se encargan */
     
-    .dashboard-menu {
-        display: flex; /* Links en fila */
-        gap: 10px;
-    }
-    .dashboard-menu li a {
-        padding: 8px 12px;
-    }
-
-    #main-content {
-        padding: 20px;
-    }
-
-    #dark-mode-toggle {
-        /* Se queda en el dashboard en móviles */
-        position: static; 
-        order: 3; /* Moverlo al final */
-        margin-left: 10px;
-    }
-
-    #toast-container {
-        /* Re-centrar el toast */
-        left: 50%;
-        width: 90%;
-    }
-    
-    #game-container, #lobby-container {
-        max-width: 100%; /* Ocupar todo el ancho */
-        padding: 15px;
-    }
-    
-    #game-grid {
-        width: 280px; /* Más pequeño */
-        gap: 4px;
-    }
+    /* Autoajuste: Hacemos la fuente un poco más pequeña en móviles */
     .grid-cell {
-        width: 52px;
-        height: 52px;
+        font-size: 1.5rem;
     }
 
     #guess-input-area {
-        flex-direction: column;
-        gap: 8px;
-        align-items: center;
+        flex-direction: column; gap: 8px; align-items: center;
     }
-    #guess-input-area input {
-        width: 100%;
-        max-width: 280px;
-    }
-    #guess-input-area button {
-        width: 100%;
-        max-width: 280px;
-    }
-    
-    .share-link-wrapper {
-        flex-direction: column;
-    }
+    #guess-input-area input { width: 100%; max-width: 280px; }
+    #guess-input-area button { width: 100%; max-width: 280px; }
+    .share-link-wrapper { flex-direction: column; }
 }
 
 @media (max-width: 380px) {
+    /* Autoajuste: Reducimos el max-width en pantallas muy pequeñas */
     #game-grid {
-        width: 250px;
-    }
-    .grid-cell {
-        width: 46px;
-        height: 46px;
+        max-width: 280px;
     }
 }
