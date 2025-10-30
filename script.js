@@ -18,8 +18,7 @@ const firebaseConfig = {
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app); // Obtener la instancia de la base de datos
-// NOTA: Ya no necesitamos 'gamesRef' global, usaremos ref() directamente
+const db = getDatabase(app);
 
 // --- 2. Elementos del DOM ---
 const lobbyContainer = document.getElementById('lobby-container');
@@ -128,26 +127,37 @@ async function crearPartida() {
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
 
+    // Ocultar formularios de lobby
     document.getElementById('create-section').classList.add('hidden');
     document.getElementById('join-section').classList.add('hidden');
     createGameBtn.disabled = false;
     createGameBtn.textContent = "Crear";
     
+    // Guardar el estado inicial del juego en la DB
     set(newGameRef, {
         secretWord: word,
         status: 'waiting',
-        intentos: {} // Usar objeto vacío para futuros 'push'
+        intentos: {}
     });
 
     playerRole = 'retador';
     
     const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
     
+    // Mostrar el código y el enlace
     roomCodeDisplay.textContent = currentGameID;
     gameLinkText.value = gameURL;
     gameCodeDisplay.classList.remove('hidden');
 
-    escucharCambiosDelJuego();
+    // --- CORRECCIÓN DE LÓGICA ---
+    // El retador AHORA se queda en el lobby, escuchando a que alguien se una.
+    const gameStatusRef = ref(db, `games/${currentGameID}/status`);
+    gameListener = onValue(gameStatusRef, (snapshot) => {
+        if (snapshot.val() === 'active') {
+            // ¡Alguien se unió! Ahora iniciamos el juego para el retador.
+            iniciarJuego('retador');
+        }
+    });
 }
 
 /**
@@ -172,14 +182,20 @@ function unirseAPartida() {
         if (!snapshot.exists()) {
             showToast("No se encontró esa partida. Revisa el código.");
             applyAnimation(joinCodeInput, 'shake');
+        } else if (snapshot.val().status === 'active') {
+            showToast("Esta partida ya está en progreso.");
         } else {
+            // ¡Partida encontrada!
             currentGameID = code;
             playerRole = 'retado';
             secretWord = snapshot.val().secretWord;
             
+            // Marcar la partida como activa
             update(gameRef, { status: 'active' });
             window.history.replaceState(null, '', window.location.pathname);
-            escucharCambiosDelJuego();
+            
+            // Iniciar el juego para el retado
+            iniciarJuego('retado');
         }
     }).catch((error) => {
         console.error("Error al unirse a la partida:", error);
@@ -203,17 +219,21 @@ function copiarEnlace() {
 }
 
 /**
- * Se activa cuando el juego empieza (para ambos jugadores).
+ * NUEVA FUNCIÓN: Mueve a la pantalla de juego y activa el listener principal
  */
-function escucharCambiosDelJuego() {
+function iniciarJuego(role) {
+    playerRole = role;
+    
+    // Ocultar el lobby y mostrar el tablero de juego
     lobbyContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     isGameActive = true;
 
+    // Habilitar/deshabilitar el input según el rol
     if (playerRole === 'retador') {
         guessInput.disabled = true;
         guessBtn.disabled = true;
-        gameMessage.textContent = "Esperando el intento del retado...";
+        gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
     } else {
         guessInput.disabled = false;
         guessBtn.disabled = false;
@@ -221,17 +241,24 @@ function escucharCambiosDelJuego() {
         gameMessage.textContent = "¡Tu turno! Adivina la palabra.";
     }
 
+    // Apagar el listener de status (si el retador lo tenía)
+    if (gameListener) {
+        gameListener(); // Llama a la función 'off'
+    }
+
+    // Iniciar el listener principal que sincroniza la cuadrícula
+    sincronizarJuego();
+}
+
+/**
+ * Sincroniza la cuadrícula y el estado del juego para ambos jugadores.
+ */
+function sincronizarJuego() {
     const gameRef = ref(db, `games/${currentGameID}`);
     
-    // onValue es el listener que se dispara CADA VEZ que algo cambia en la DB
-    // Guardamos la referencia al listener para poder apagarlo luego
     gameListener = onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return; // La partida fue borrada
-
-        if (data.status === 'active' && playerRole === 'retador') {
-             gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
-        }
         
         let intentosArray = [];
         if (data.intentos) {
@@ -249,7 +276,7 @@ function escucharCambiosDelJuego() {
                     triggerVictoryAnimation(intentosArray.length - 1);
                 }
                 endGame();
-            } else if (intentosArray.length === 5) {
+            } else if (intentosArray.length === 5 && ultimoIntento.guess !== secretWord) {
                 gameMessage.textContent = "¡El retado ha perdido! Se acabaron los intentos.";
                 endGame();
             }
@@ -272,10 +299,9 @@ function handleGuess() {
 
     const cellStates = procesarLogicaIntento(guess, secretWord);
     
-    // Usamos el ID del juego y 'push' para añadir a la lista de intentos
     const intentosRef = ref(db, `games/${currentGameID}/intentos`);
-    const newIntentRef = push(intentosRef); // Crea una referencia de 'push'
-    set(newIntentRef, { // Usa 'set' en esa referencia
+    const newIntentRef = push(intentosRef);
+    set(newIntentRef, {
         guess: guess,
         states: cellStates
     });
