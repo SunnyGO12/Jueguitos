@@ -145,7 +145,7 @@ body.dark-mode .dashboard-menu li a:hover {
 }
 
 /* --- Contenedores del Juego (Estilos refinados) --- */
-#setup-container, #game-container {
+#setup-container, #game-container, #lobby-container {
     background-color: var(--color-container-bg-light);
     padding: 25px;
     border-radius: 10px;
@@ -153,15 +153,48 @@ body.dark-mode .dashboard-menu li a:hover {
     border: 1px solid var(--color-border-light);
     text-align: center;
     width: 90%;
-    max-width: 420px; /* REVERTIDO: Ancho original */
+    max-width: 420px; 
     transition: background-color 0.3s, border-color 0.3s;
 }
 
 body.dark-mode #setup-container,
-body.dark-mode #game-container {
+body.dark-mode #game-container,
+body.dark-mode #lobby-container {
     background-color: var(--color-container-bg-dark);
     border-color: var(--color-border-dark);
 }
+
+/* --- Estilos del Lobby --- */
+.lobby-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border-light);
+}
+
+body.dark-mode .lobby-section {
+    border-top-color: var(--color-border-dark);
+}
+
+#game-code-display p {
+    margin-bottom: 10px;
+}
+#game-code-text {
+    width: 100%;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 10px;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-light);
+    border: 1px dashed var(--color-border-light);
+}
+
+body.dark-mode #game-code-text {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-dark);
+    border-color: var(--color-border-dark);
+}
+
 
 .hidden {
     display: none;
@@ -192,14 +225,12 @@ body.dark-mode input[type="password"] {
     color: var(--color-text-dark);
 }
 
-/* REVERTIDO: Estilos para el input de adivinanza */
 #guess-input-area {
     margin-top: 20px;
     display: flex;
     justify-content: center;
     gap: 10px;
 }
-/* Asegurarnos que el input y botón se vean bien */
 #guess-input-area input {
     margin: 0;
 }
@@ -271,8 +302,6 @@ body.dark-mode .grid-cell {
 }
 
 /* --- Animaciones de Feedback --- */
-
-/* 1. Animación de Sacudida (Shake) para Errores */
 .shake {
     animation: shake 0.5s ease;
 }
@@ -283,7 +312,6 @@ body.dark-mode .grid-cell {
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
-/* 2. Animación de Victoria (Júbilo) */
 .jubilation {
     animation: jubilation 0.8s ease forwards;
 }
@@ -388,9 +416,6 @@ body.dark-mode #dark-mode-toggle {
     to { opacity: 0; transform: translateY(-20px); }
 }
 
-/* ELIMINADO: Todos los estilos de #keyboard-container y .key */
-
-
 /* --- Media Query para Móviles --- */
 @media (max-width: 768px) {
     body {
@@ -443,14 +468,11 @@ body.dark-mode #dark-mode-toggle {
         width: 90%;
     }
     
-    #game-container {
+    #game-container, #lobby-container {
         max-width: 100%; /* Ocupar todo el ancho */
         padding: 15px;
     }
     
-    /* ELIMINADO: Ajustes del teclado para móviles */
-
-    /* Ajustes de la cuadrícula para móviles */
     #game-grid {
         width: 280px; /* Más pequeño */
         gap: 4px;
@@ -460,7 +482,6 @@ body.dark-mode #dark-mode-toggle {
         height: 52px;
     }
 
-    /* REVERTIDO: Ajustes para el input en móviles */
     #guess-input-area {
         flex-direction: column;
         gap: 8px;
@@ -477,7 +498,6 @@ body.dark-mode #dark-mode-toggle {
 }
 
 @media (max-width: 380px) {
-    /* Ajustes más finos para pantallas muy pequeñas */
     #game-grid {
         width: 250px;
     }
@@ -485,6 +505,4 @@ body.dark-mode #dark-mode-toggle {
         width: 46px;
         height: 46px;
     }
-    
-    /* ELIMINADO: Ajustes de teclas */
 }
