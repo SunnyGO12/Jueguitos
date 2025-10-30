@@ -96,7 +96,7 @@ function crearPartida() {
     }
 
     // Ocultar botones de lobby para mostrar el código
-    // CORREGIDO: Usamos los IDs que añadimos al HTML
+    // ¡IMPORTANTE! Esta es la línea 99 (o cercana)
     document.getElementById('create-section').classList.add('hidden');
     document.getElementById('join-section').classList.add('hidden');
 
@@ -357,6 +357,6 @@ function showToast(message, type = 'error') {
 function applyAnimation(element, animationClass) {
     element.classList.add(animationClass);
     element.addEventListener('animationend', () => {
-        element.classList.remove(animationClass);
+        element.classList.remove('animationClass');
     }, { once: true });
 }
