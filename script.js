@@ -1,9 +1,8 @@
 // --- 1. Configuración de Firebase ---
-
-// Importar las funciones necesarias desde los SDKs
-// ¡CORREGIDO! 'push' ha sido añadido a la importación.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+// ¡NUEVO! Importamos nuestro diccionario
+import { DICCIONARIO } from './diccionario.js';
 
 // Tu configuración de Firebase
 const firebaseConfig = {
@@ -41,11 +40,11 @@ const darkModeToggle = document.getElementById('dark-mode-toggle');
 const toastContainer = document.getElementById('toast-container');
 
 // --- 3. Variables de Estado Global ---
-let currentGameID = null; // El código de 5 letras
-let playerRole = null; // 'retador' o 'retado'
-let secretWord = null; // Solo la conocerá el retado (para comprobar)
+let currentGameID = null;
+let playerRole = null;
+let secretWord = null; // ¡Ahora ambos jugadores tendrán esto!
 let isGameActive = false;
-let gameListener = null; // Variable para guardar el listener de Firebase
+let gameListener = null;
 
 // --- 4. Event Listeners ---
 createGameBtn.addEventListener('click', crearPartida);
@@ -78,9 +77,6 @@ darkModeToggle.addEventListener('click', () => {
 
 // --- 5. Funciones Principales (Firebase) ---
 
-/**
- * Genera un código aleatorio de una longitud dada.
- */
 function generarCodigo(longitud) {
     let codigo = '';
     const CARACTERES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -90,9 +86,6 @@ function generarCodigo(longitud) {
     return codigo;
 }
 
-/**
- * Genera un código único de 5 letras que no exista en Firebase.
- */
 async function generarCodigoUnico() {
     let codigoUnico = '';
     let existe = true;
@@ -105,19 +98,26 @@ async function generarCodigoUnico() {
     return codigoUnico;
 }
 
-/**
- * El Retador crea la partida (es asíncrona).
- */
 async function crearPartida() {
-    const word = secretWordInput.value.trim().toUpperCase();
+    // ACTUALIZADO: Convertir a minúsculas para validación
+    const word = secretWordInput.value.trim().toLowerCase();
 
+    // Validación de 5 letras
     if (word.length !== 5) {
         showToast("¡La palabra debe tener exactamente 5 letras!");
         applyAnimation(secretWordInput, 'shake');
         return;
     }
-    if (!/^[A-ZÑ]+$/.test(word)) {
+    // Validación de solo letras (ahora minúsculas)
+    if (!/^[a-zñ]+$/.test(word)) {
         showToast("¡La palabra solo debe contener letras!");
+        applyAnimation(secretWordInput, 'shake');
+        return;
+    }
+    
+    // ¡NUEVA VALIDACIÓN DE DICCIONARIO!
+    if (!DICCIONARIO.has(word)) {
+        showToast("La palabra no está en nuestro diccionario.");
         applyAnimation(secretWordInput, 'shake');
         return;
     }
@@ -128,24 +128,22 @@ async function crearPartida() {
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
 
-    // Ocultar formularios de lobby
     document.getElementById('create-section').classList.add('hidden');
     document.getElementById('join-section').classList.add('hidden');
     createGameBtn.disabled = false;
     createGameBtn.textContent = "Crear";
     
-    // Guardar el estado inicial del juego en la DB
     set(newGameRef, {
-        secretWord: word,
+        secretWord: word, // Guardar palabra en minúsculas
         status: 'waiting',
-        intentos: {} // Usar objeto vacío para futuros 'push'
+        intentos: {}
     });
 
     playerRole = 'retador';
+    secretWord = word; // ¡CORRECCIÓN DE BUG! El retador también guarda la palabra
     
     const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
     
-    // Mostrar el código y el enlace
     roomCodeDisplay.textContent = currentGameID;
     gameLinkText.value = gameURL;
     gameCodeDisplay.classList.remove('hidden');
@@ -154,23 +152,21 @@ async function crearPartida() {
     const gameStatusRef = ref(db, `games/${currentGameID}/status`);
     gameListener = onValue(gameStatusRef, (snapshot) => {
         if (snapshot.val() === 'active') {
-            // ¡Alguien se unió! Ahora iniciamos el juego para el retador.
             iniciarJuego('retador');
         }
     });
 }
 
-/**
- * El Retado se une a la partida.
- */
 function unirseAPartida() {
+    // Código de sala siempre en mayúsculas
     let code = joinCodeInput.value.trim().toUpperCase();
     
     if (code.includes('#')) {
         code = code.split('#')[1].toUpperCase();
     }
     
-    if (code.length !== 5) {
+    // Validación de código de 5 letras (mayúsculas)
+    if (code.length !== 5 || !/^[A-Z]+$/.test(code)) {
         showToast("El código debe tener 5 letras.");
         applyAnimation(joinCodeInput, 'shake');
         return;
@@ -185,16 +181,13 @@ function unirseAPartida() {
         } else if (snapshot.val().status === 'active') {
             showToast("Esta partida ya está en progreso.");
         } else {
-            // ¡Partida encontrada!
             currentGameID = code;
             playerRole = 'retado';
-            secretWord = snapshot.val().secretWord;
+            secretWord = snapshot.val().secretWord; // Obtiene la palabra (en minúsculas)
             
-            // Marcar la partida como activa
             update(gameRef, { status: 'active' });
             window.history.replaceState(null, '', window.location.pathname);
             
-            // Iniciar el juego para el retado
             iniciarJuego('retado');
         }
     }).catch((error) => {
@@ -203,9 +196,6 @@ function unirseAPartida() {
     });
 }
 
-/**
- * Copia el enlace del juego al portapapeles.
- */
 function copiarEnlace() {
     gameLinkText.select();
     gameLinkText.setSelectionRange(0, 99999);
@@ -218,58 +208,49 @@ function copiarEnlace() {
     });
 }
 
-/**
- * Mueve a la pantalla de juego y activa el listener principal
- */
 function iniciarJuego(role) {
     playerRole = role;
     
-    // 1. Ocultar el lobby y mostrar el tablero de juego
     lobbyContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     isGameActive = true;
 
-    // 2. Habilitar/deshabilitar el input según el rol
     if (playerRole === 'retador') {
         guessInput.disabled = true;
         guessBtn.disabled = true;
         gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
-    } else { // 'retado'
+    } else {
         guessInput.disabled = false;
         guessBtn.disabled = false;
         guessInput.focus();
         gameMessage.textContent = "¡Tu turno! Adivina la palabra.";
     }
 
-    // 3. Apagar el listener de status (si el retador lo tenía)
     if (gameListener) {
-        gameListener(); // Llama a la función 'off' (desconectar)
+        gameListener(); // Desconecta el listener de status
     }
 
-    // 4. Iniciar el listener principal que sincroniza la cuadrícula
     sincronizarJuego();
 }
 
-/**
- * Sincroniza la cuadrícula y el estado del juego para ambos jugadores.
- */
 function sincronizarJuego() {
     const gameRef = ref(db, `games/${currentGameID}`);
     
     gameListener = onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
-        if (!data) return; // La partida fue borrada
+        if (!data) return;
         
         let intentosArray = [];
         if (data.intentos) {
             intentosArray = Object.values(data.intentos);
         }
         
-        renderizarGrid(intentosArray); // Renderiza la cuadrícula
+        renderizarGrid(intentosArray);
             
-        // Comprobar estado de victoria/derrota
         if (intentosArray.length > 0) {
             const ultimoIntento = intentosArray[intentosArray.length - 1];
+            
+            // ¡CORRECCIÓN DE BUG! Ahora 'secretWord' existe para ambos roles
             if (ultimoIntento.guess === secretWord) {
                 gameMessage.textContent = "¡El retado ha ganado!";
                 if (playerRole === 'retado') {
@@ -284,35 +265,37 @@ function sincronizarJuego() {
     });
 }
 
-/**
- * El Retado envía su intento.
- */
 function handleGuess() {
     if (!isGameActive || playerRole !== 'retado') return;
-    const guess = guessInput.value.trim().toUpperCase();
+    
+    // ACTUALIZADO: Convertir a minúsculas para validación
+    const guess = guessInput.value.trim().toLowerCase();
 
     if (guess.length !== 5) {
         showToast("¡Tu intento debe tener 5 letras!");
         applyAnimation(guessInput, 'shake');
         return;
     }
+    
+    // ¡NUEVA VALIDACIÓN DE DICCIONARIO!
+    if (!DICCIONARIO.has(guess)) {
+        showToast("Esa palabra no está en el diccionario.");
+        applyAnimation(gameGrid.children[intentosArray.length], 'shake'); // Sacude la fila actual
+        return;
+    }
 
     const cellStates = procesarLogicaIntento(guess, secretWord);
     
-    // Usamos el ID del juego y 'push' para añadir a la lista de intentos
     const intentosRef = ref(db, `games/${currentGameID}/intentos`);
-    const newIntentRef = push(intentosRef); // ¡AQUÍ ES DONDE SE USA 'push'!
+    const newIntentRef = push(intentosRef);
     set(newIntentRef, {
-        guess: guess,
+        guess: guess, // Guardar intento en minúsculas
         states: cellStates
     });
 
     guessInput.value = "";
 }
 
-/**
- * Pinta la cuadrícula basado en los datos de Firebase.
- */
 function renderizarGrid(intentos) {
     for (let i = 0; i < 5; i++) {
         const row = gameGrid.children[i];
@@ -330,7 +313,8 @@ function renderizarGrid(intentos) {
         
         for (let i = 0; i < 5; i++) {
             const cell = row.children[i];
-            cell.textContent = guess[i];
+            // ACTUALIZADO: Mostrar la letra en mayúsculas
+            cell.textContent = guess[i].toUpperCase(); 
             cell.classList.add(`cell-${states[i]}`);
             
             if (rowIndex === intentos.length - 1 && !cell.classList.contains('cell-reveal')) {
@@ -345,7 +329,7 @@ function renderizarGrid(intentos) {
 }
 
 /**
- * Lógica pura de Wordle.
+ * Lógica pura de Wordle (ahora todo en minúsculas)
  */
 function procesarLogicaIntento(guess, secret) {
     const secretWordMap = {};
@@ -371,17 +355,13 @@ function procesarLogicaIntento(guess, secret) {
     return cellStates;
 }
 
-/**
- * Termina el juego para todos.
- */
 function endGame() {
     isGameActive = false;
     guessInput.disabled = true;
     guessBtn.disabled = true;
 
-    // Apaga el listener de Firebase para no recibir más actualizaciones
     if (gameListener) {
-        gameListener(); // Llama a la función 'off' devuelta por onValue
+        gameListener(); // Desconecta el listener
     }
     
     resetBtn.classList.remove('hidden');
