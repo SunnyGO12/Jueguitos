@@ -96,8 +96,9 @@ function crearPartida() {
     }
 
     // Ocultar botones de lobby para mostrar el código
-    document.querySelector('.lobby-section:nth-child(1)').classList.add('hidden');
-    document.querySelector('.lobby-section:nth-child(2)').classList.add('hidden');
+    // CORREGIDO: Usamos los IDs que añadimos al HTML
+    document.getElementById('create-section').classList.add('hidden');
+    document.getElementById('join-section').classList.add('hidden');
 
     // Crear un nuevo ID de juego en Firebase
     const newGameRef = push(gamesRef); // Crea una referencia única
