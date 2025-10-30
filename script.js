@@ -33,6 +33,7 @@ const joinGameBtn = document.getElementById('join-game-btn');
 const joinCodeInput = document.getElementById('join-code-input');
 const gameCodeDisplay = document.getElementById('game-code-display');
 const gameCodeText = document.getElementById('game-code-text');
+const copyCodeBtn = document.getElementById('copy-code-btn'); // Botón de copiar
 
 // Juego
 const gameGrid = document.getElementById('game-grid');
@@ -51,21 +52,31 @@ let playerRole = null; // 'retador' o 'retado'
 let secretWord = null; // Solo la conocerá el retado (para comprobar)
 let isGameActive = false;
 
-// --- 4. Event Listeners (Lobby) ---
+// --- 4. Event Listeners ---
 createGameBtn.addEventListener('click', crearPartida);
 joinGameBtn.addEventListener('click', unirseAPartida);
-guessBtn.addEventListener('click', handleGuess); // Listener del juego
-guessInput.addEventListener('keydown', (e) => { // Listener del juego
+copyCodeBtn.addEventListener('click', copiarCodigo); // Listener para copiar
+guessBtn.addEventListener('click', handleGuess);
+guessInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleGuess();
 });
 
-// Listeners de Modo Oscuro (sin cambios)
 document.addEventListener('DOMContentLoaded', () => {
+    // Listener de Modo Oscuro
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
     }
+
+    // Comprobar si la URL tiene un código de juego al cargar
+    if (window.location.hash) {
+        // window.location.hash devuelve "#-NqX..."
+        const gameCodeFromURL = window.location.hash.substring(1); // Quita el '#'
+        joinCodeInput.value = gameCodeFromURL;
+        showToast("Código de partida cargado desde el enlace.", 'success');
+    }
 });
+
 darkModeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     const isDarkMode = document.body.classList.contains('dark-mode');
@@ -96,13 +107,12 @@ function crearPartida() {
     }
 
     // Ocultar botones de lobby para mostrar el código
-    // ¡IMPORTANTE! Esta es la línea 99 (o cercana)
     document.getElementById('create-section').classList.add('hidden');
     document.getElementById('join-section').classList.add('hidden');
 
     // Crear un nuevo ID de juego en Firebase
     const newGameRef = push(gamesRef); // Crea una referencia única
-    currentGameID = newGameRef.key; // Este es el ID único (ej. -NqUvK...)
+    currentGameID = newGameRef.key; // Este es el ID único
     
     // Guardar el estado inicial del juego en la DB
     set(newGameRef, {
@@ -113,8 +123,10 @@ function crearPartida() {
 
     playerRole = 'retador';
     
-    // Mostrar el código de la partida
-    gameCodeText.value = currentGameID;
+    // Genera la URL completa en lugar de solo el código
+    const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
+    gameCodeText.value = gameURL; // Pone la URL en el input
+    
     gameCodeDisplay.classList.remove('hidden');
 
     // Empezar a "escuchar" la partida para saber cuándo se une el retado
@@ -126,7 +138,14 @@ function crearPartida() {
  * Comprueba si el código de la partida es válido.
  */
 function unirseAPartida() {
-    const code = joinCodeInput.value.trim();
+    // El usuario puede pegar la URL completa o solo el código
+    let code = joinCodeInput.value.trim();
+    
+    // Si pegaron la URL completa, extraemos solo el código (lo que está después del #)
+    if (code.includes('#')) {
+        code = code.split('#')[1];
+    }
+    
     if (!code) {
         showToast("Escribe un código de partida.");
         applyAnimation(joinCodeInput, 'shake');
@@ -135,7 +154,7 @@ function unirseAPartida() {
 
     const gameRef = ref(db, `games/${code}`);
 
-    // Comprobar si la partida existe (usando 'get' en lugar de 'once')
+    // Comprobar si la partida existe
     get(gameRef).then((snapshot) => {
         if (!snapshot.exists()) {
             showToast("No se encontró esa partida. Revisa el código.");
@@ -146,8 +165,11 @@ function unirseAPartida() {
             playerRole = 'retado';
             secretWord = snapshot.val().secretWord; // El retado obtiene la palabra secreta
             
-            // Marcar la partida como activa (usando 'update')
+            // Marcar la partida como activa
             update(gameRef, { status: 'active' });
+
+            // Limpia la URL (quita el #)
+            window.history.replaceState(null, '', window.location.pathname);
 
             // Empezar a "escuchar" la partida
             escucharCambiosDelJuego();
@@ -155,6 +177,25 @@ function unirseAPartida() {
     }).catch((error) => {
         console.error("Error al unirse a la partida:", error);
         showToast("Error de red. Inténtalo de nuevo.");
+    });
+}
+
+/**
+ * Copia el enlace del juego al portapapeles.
+ */
+function copiarCodigo() {
+    // Selecciona el texto dentro del input
+    gameCodeText.select();
+    gameCodeText.setSelectionRange(0, 99999); // Para móviles
+
+    // Usa la API del portapapeles
+    navigator.clipboard.writeText(gameCodeText.value).then(() => {
+        // Éxito
+        showToast("¡Enlace copiado al portapapeles!", 'success');
+    }).catch(err => {
+        // Error
+        showToast("No se pudo copiar el enlace.");
+        console.error('Error al copiar:', err);
     });
 }
 
@@ -357,6 +398,6 @@ function showToast(message, type = 'error') {
 function applyAnimation(element, animationClass) {
     element.classList.add(animationClass);
     element.addEventListener('animationend', () => {
-        element.classList.remove('animationClass');
+        element.classList.remove(animationClass); // Bug corregido aquí
     }, { once: true });
 }
