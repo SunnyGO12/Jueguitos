@@ -137,7 +137,7 @@ async function crearPartida() {
     set(newGameRef, {
         secretWord: word,
         status: 'waiting',
-        intentos: {}
+        intentos: {} // Usar objeto vacío para futuros 'push'
     });
 
     playerRole = 'retador';
@@ -224,29 +224,29 @@ function copiarEnlace() {
 function iniciarJuego(role) {
     playerRole = role;
     
-    // Ocultar el lobby y mostrar el tablero de juego
+    // 1. Ocultar el lobby y mostrar el tablero de juego
     lobbyContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     isGameActive = true;
 
-    // Habilitar/deshabilitar el input según el rol
+    // 2. Habilitar/deshabilitar el input según el rol
     if (playerRole === 'retador') {
         guessInput.disabled = true;
         guessBtn.disabled = true;
         gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
-    } else {
+    } else { // 'retado'
         guessInput.disabled = false;
         guessBtn.disabled = false;
         guessInput.focus();
         gameMessage.textContent = "¡Tu turno! Adivina la palabra.";
     }
 
-    // Apagar el listener de status (si el retador lo tenía)
+    // 3. Apagar el listener de status (si el retador lo tenía)
     if (gameListener) {
-        gameListener(); // Llama a la función 'off'
+        gameListener(); // Llama a la función 'off' (desconectar)
     }
 
-    // Iniciar el listener principal que sincroniza la cuadrícula
+    // 4. Iniciar el listener principal que sincroniza la cuadrícula
     sincronizarJuego();
 }
 
@@ -299,9 +299,10 @@ function handleGuess() {
 
     const cellStates = procesarLogicaIntento(guess, secretWord);
     
+    // Usamos el ID del juego y 'push' para añadir a la lista de intentos
     const intentosRef = ref(db, `games/${currentGameID}/intentos`);
-    const newIntentRef = push(intentosRef);
-    set(newIntentRef, {
+    const newIntentRef = push(intentosRef); // Crea una referencia de 'push'
+    set(newIntentRef, { // Usa 'set' en esa referencia
         guess: guess,
         states: cellStates
     });
