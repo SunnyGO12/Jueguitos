@@ -27,21 +27,35 @@
     <main id="main-content">
 
         <button id="dark-mode-toggle">🌙</button>
-
         <div id="toast-container"></div>
-
         <h1>Wordle para Dos Jugadores</h1>
 
-        <div id="setup-container">
-            <h2>Hola Retador,</h2>
-            <p>Escribe la palabra secreta de 5 letras:</p>
-            <input type="password" id="secret-word-input" maxlength="5">
-            <button id="start-game-btn">¡Listo! Ocultar palabra</button>
+        <div id="lobby-container">
+            <h2>¡Bienvenido!</h2>
+            
+            <div class="lobby-section">
+                <h3>Crear una Partida</h3>
+                <p>Escribe la palabra secreta (5 letras):</p>
+                <input type="password" id="secret-word-input" maxlength="5">
+                <button id="create-game-btn">Crear</button>
+            </div>
+            
+            <div class="lobby-section">
+                <h3>Unirse a una Partida</h3>
+                <p>Pega el código de la partida:</p>
+                <input type="text" id="join-code-input" placeholder="Código de la partida...">
+                <button id="join-game-btn">Unir</se>
+            </div>
+            
+             <div id="game-code-display" class="hidden">
+                <p>¡Partida creada! Comparte este código con el retado:</p>
+                <input type="text" id="game-code-text" readonly>
+                <p>Esperando a que el retado se una...</p>
+            </div>
         </div>
 
+
         <div id="game-container" class="hidden">
-            <h2>Hola Retado, ¡Adivina!</h2>
-            
             <div id="game-grid">
                 <div class="grid-row">
                     <div class="grid-cell"></div>
@@ -79,21 +93,20 @@
                     <div class="grid-cell"></div>
                 </div>
             </div>
-
+            
             <div id="guess-input-area">
                 <input type="text" id="guess-input" maxlength="5" placeholder="Escribe 5 letras...">
                 <button id="guess-btn">Intentar</button>
             </div>
 
             <p id="game-message"></p>
-
+            
             <div id="end-game-buttons">
                 <button id="reset-btn" class="hidden">Jugar de nuevo</button>
             </div>
-
-            </div>
+        </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html>
