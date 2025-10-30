@@ -42,16 +42,18 @@
             
             <div class="lobby-section" id="join-section">
                 <h3>Unirse a una Partida</h3>
-                <p>Pega el código de la partida:</p>
-                <input type="text" id="join-code-input" placeholder="Código de la partida...">
+                <p>Escribe el código de la partida (5 letras):</p>
+                <input type="text" id="join-code-input" placeholder="XXXXX" maxlength="5">
                 <button id="join-game-btn">Unir</se>
             </div>
             
              <div id="game-code-display" class="hidden">
-                <p>¡Partida creada! Comparte este enlace con el retado:</p>
+                <p>¡Partida creada! Comparte este código:</p>
+                <h3 class="room-code-display"></h3>
+                <p>...o copia y comparte el enlace directo:</p>
                 <div class="share-link-wrapper">
-                    <input type="text" id="game-code-text" readonly>
-                    <button id="copy-code-btn">Copiar</button>
+                    <input type="text" id="game-link-text" readonly>
+                    <button id="copy-link-btn">Copiar Enlace</button>
                 </div>
                 <p>Esperando a que el retado se una...</p>
             </div>
