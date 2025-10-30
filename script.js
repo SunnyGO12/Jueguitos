@@ -1,8 +1,9 @@
 // --- 1. Configuración de Firebase ---
 
 // Importar las funciones necesarias desde los SDKs
+// ¡CORREGIDO! 'push' ha sido añadido a la importación.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
 // Tu configuración de Firebase
 const firebaseConfig = {
@@ -219,7 +220,7 @@ function copiarEnlace() {
 }
 
 /**
- * NUEVA FUNCIÓN: Mueve a la pantalla de juego y activa el listener principal
+ * Mueve a la pantalla de juego y activa el listener principal
  */
 function iniciarJuego(role) {
     playerRole = role;
@@ -301,8 +302,8 @@ function handleGuess() {
     
     // Usamos el ID del juego y 'push' para añadir a la lista de intentos
     const intentosRef = ref(db, `games/${currentGameID}/intentos`);
-    const newIntentRef = push(intentosRef); // Crea una referencia de 'push'
-    set(newIntentRef, { // Usa 'set' en esa referencia
+    const newIntentRef = push(intentosRef); // ¡AQUÍ ES DONDE SE USABA 'push' FALTANTE!
+    set(newIntentRef, {
         guess: guess,
         states: cellStates
     });
