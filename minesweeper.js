@@ -180,7 +180,7 @@ async function crearPartidaMinesweeper() {
         status: 'waiting',
         player1: P_CREATOR, 
         player2: null,
-        board: null, // CRÍTICO: El tablero es null al inicio
+        board: null, 
         view: null,  
         scoreP1: 0, scoreP2: 0, totalMines: NUM_MINES, remainingMines: NUM_MINES, winner: null
     });
