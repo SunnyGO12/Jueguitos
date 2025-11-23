@@ -50,14 +50,23 @@ const P_JOINER = 'P2';
 
 // --- 4. Funciones de Juego (Lógica de Buscaminas) ---
 
-function generateMinesweeperBoard(size, mines) {
+/**
+ * Genera el tablero de minas y números, GARANTIZANDO que (startR, startC) no tenga una mina
+ * y tenga valor 0 (o lo más cercano a 0 posible).
+ */
+function generateMinesweeperBoard(size, mines, startR, startC) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
 
-    // Colocar Minas (-1)
+    // Colocar Minas (-1), evitando el área inicial
     while (placedMines < mines) {
         let row = Math.floor(Math.random() * size);
         let col = Math.floor(Math.random() * size);
+        
+        // Evitar la celda de inicio y sus vecinos inmediatos (3x3 área)
+        if (Math.abs(row - startR) <= 1 && Math.abs(col - startC) <= 1) {
+            continue;
+        }
         
         if (board[row][col] !== -1) {
             board[row][col] = -1;
@@ -100,29 +109,22 @@ function generateMinesweeperBoard(size, mines) {
  * Modifica la matriz 'view' en su lugar.
  */
 function checkAndRevealAdjacent(r, c, board, view, player) {
-    // Si la celda está fuera del límite o ya está revelada, salimos.
     if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[r][c].revealed) {
         return;
     }
-
-    // Si es una mina o ya está marcada con bandera, no hacemos nada.
     if (board[r][c] === -1 || view[r][c].flagged) {
         return;
     }
 
-    // Revelar la celda actual
     view[r][c].revealed = true;
     view[r][c].player = player;
     
-    // Si la celda actual es un número (> 0), paramos la cascada aquí.
     if (board[r][c] > 0) {
         return;
     }
 
-    // Si es 0, llamamos recursivamente a las 8 celdas vecinas.
     for (let i = -1; i <= 1; i++) {
         for (let j = -1; j <= 1; j++) {
-            // Evitar la celda actual (0, 0)
             if (i === 0 && j === 0) continue; 
             
             checkAndRevealAdjacent(r + i, c + j, board, view, player);
@@ -178,14 +180,15 @@ async function crearPartidaMinesweeper() {
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
     
-    const initialState = generateMinesweeperBoard(GRID_SIZE, NUM_MINES);
-
+    // NO GENERAMOS EL TABLERO AQUÍ. Solo lo inicializamos a null.
     set(newGameRef, {
         gameType: 'minesweeper',
         status: 'waiting',
         player1: P_CREATOR, 
         player2: null,
-        ...initialState 
+        board: null, // CRÍTICO: El tablero es null al inicio
+        view: null,  // CRÍTICO: La vista es null al inicio
+        scoreP1: 0, scoreP2: 0, totalMines: NUM_MINES, remainingMines: NUM_MINES, winner: null
     });
 
     playerRole = P_CREATOR;
@@ -248,6 +251,7 @@ function iniciarJuegoMinesweeper(role) {
         statusListener = null;
     }
     
+    // Inicializar la cuadrícula visual para ambos
     initializeGridDisplay(); 
 
     sincronizarMinesweeper();
@@ -260,6 +264,12 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
+        // Si el tablero no se ha generado, mostramos el mensaje de "Esperando el primer clic"
+        if (data.board === null) {
+            minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
+            return;
+        }
+
         renderMinesweeperGrid(data.view, data.board);
         updateScoreboard(data);
 
@@ -276,6 +286,8 @@ function sincronizarMinesweeper() {
         } else if (data.remainingMines === 0) {
             const finalMessage = data.scoreP1 > data.scoreP2 ? `P1 gana con ${data.scoreP1} puntos.` : (data.scoreP2 > data.scoreP1 ? `P2 gana con ${data.scoreP2} puntos.` : "¡Empate!");
             endGameMinesweeper(finalMessage);
+        } else {
+            minesweeperStatus.textContent = "¡A jugar! Clica para revelar celdas.";
         }
     });
 }
@@ -347,10 +359,12 @@ function handleMinesweeperClick(e) {
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
     
-    // Clic izquierdo
+    // Clic izquierdo (Revelar)
     if (e.button === 0) {
         revealCell(r, c);
     } 
+    // Clic derecho (Bandera)
+    // NOTE: El manejo de clic derecho se hace en el listener de 'contextmenu'
 }
 
 function handleFlag(r, c) {
@@ -370,6 +384,28 @@ function handleFlag(r, c) {
     });
 }
 
+// NUEVA FUNCIÓN: Procesa el primer clic para generar el tablero y luego revela
+function handleFirstClick(r, c) {
+    // 1. Generar tablero de forma segura
+    const { board, view, scoreP1, scoreP2, totalMines, remainingMines } = generateMinesweeperBoard(GRID_SIZE, NUM_MINES, r, c);
+    
+    // 2. Revelar la primera celda (iniciando cascada)
+    // Usamos el estado del nuevo tablero generado
+    const initialRevealCount = view.flat().filter(cell => cell.revealed).length;
+    checkAndRevealAdjacent(r, c, board, view, playerRole);
+    const finalRevealCount = view.flat().filter(cell => cell.revealed).length;
+    
+    const pointsEarned = finalRevealCount - initialRevealCount;
+
+    // 3. Guardar el nuevo tablero inicial y el estado de la revelación en Firebase
+    update(ref(db, `games/${currentGameID}`), {
+        board: board,
+        view: view,
+        scoreP1: playerRole === P_CREATOR ? pointsEarned : 0,
+        scoreP2: playerRole === P_JOINER ? pointsEarned : 0
+    });
+}
+
 
 // Lógica CRÍTICA de Buscaminas (CORREGIDA)
 function revealCell(r, c) {
@@ -377,6 +413,12 @@ function revealCell(r, c) {
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
         
+        // CRÍTICO: Si el tablero es null, este es el primer clic.
+        if (data.board === null) {
+            handleFirstClick(r, c);
+            return;
+        }
+
         if (data.winner) return; 
         if (data.view[r][c].revealed || data.view[r][c].flagged) return;
 
@@ -400,7 +442,7 @@ function revealCell(r, c) {
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
         } else if (newBoard[r][c] > 0) {
-            // Número: CORRECCIÓN CRÍTICA: Revela la celda y suma puntos.
+            // Número: Revela la celda y suma puntos.
             newView[r][c].revealed = true;
             newView[r][c].player = playerRole;
 
@@ -413,7 +455,6 @@ function revealCell(r, c) {
             // Celda vacía (0): Inicia la cascada y suma 1 punto por cada celda revelada.
             const initialRevealCount = newView.flat().filter(c => c.revealed).length;
             
-            // Llama a la función recursiva para revelar el área vacía
             checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
 
             const finalRevealCount = newView.flat().filter(c => c.revealed).length;
