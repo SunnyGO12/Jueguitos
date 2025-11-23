@@ -18,127 +18,186 @@
             <h2>🎮 Juegos</h2>
         </div>
         <ul class="dashboard-menu">
-            <li><a href="#" class="active">Wordle para Dos</a></li>
-            <li><a href="#">Juego 2 (Próximamente)</a></li>
-            <li><a href="#">Juego 3 (Próximamente)</a></li>
+            <li><a href="#" id="menu-wordle" class="active" data-game="wordle">Wordle para Dos</a></li>
+            <li><a href="#" id="menu-tictactoe" data-game="tictactoe">Tic-Tac-Toe</a></li>
+            <li><a href="#" id="menu-minesweeper" data-game="minesweeper">Buscaminas</a></li>
+            <li><a href="#" id="menu-chess" data-game="chess">Ajedrez</a></li>
         </ul>
     </nav>
 
     <main id="main-content">
-
         <button id="dark-mode-toggle">🌙</button>
         <div id="toast-container"></div>
-        <h1>Wordle para Dos Jugadores</h1>
+        
+        <div id="game-content-wrapper">
+        
+            <div id="wordle-game-area" data-game="wordle" class="active-game"> 
+                <h1>Wordle para Dos Jugadores</h1>
 
-        <div id="lobby-container">
-            <h2>¡Bienvenido!</h2>
-            
-            <div class="lobby-section" id="create-section">
-                <h3>Crear una Partida</h3>
-                <p>Escribe la palabra secreta (5 letras):</p>
-                <input type="password" id="secret-word-input" maxlength="5">
-                <button id="create-game-btn">Crear</button>
-            </div>
-            
-            <div class="lobby-section" id="join-section">
-                <h3>Unirse a una Partida</h3>
-                <p>Escribe el código de la partida (5 letras):</p>
-                <input type="text" id="join-code-input" placeholder="XXXXX" maxlength="5">
-                <button id="join-game-btn">Unir</button>
-            </div>
-            
-             <div id="game-code-display" class="hidden">
-                <p>¡Partida creada! Comparte este código:</p>
-                <h3 class="room-code-display"></h3>
-                <p>...o copia y comparte el enlace directo:</p>
-                <div class="share-link-wrapper">
-                    <input type="text" id="game-link-text" readonly>
-                    <button id="copy-link-btn">Copiar Enlace</button>
+                <div id="lobby-container">
+                    <h2>¡Bienvenido!</h2>
+                    
+                    <div class="lobby-section" id="create-section">
+                        <h3>Crear una Partida</h3>
+                        <p>Escribe la palabra secreta (5 letras):</p>
+                        <input type="password" id="secret-word-input" maxlength="5">
+                        <button id="create-game-btn">Crear</button>
+                    </div>
+                    
+                    <div class="lobby-section" id="join-section">
+                        <h3>Unirse a una Partida</h3>
+                        <p>Escribe el código de la partida (5 letras):</p>
+                        <input type="text" id="join-code-input" placeholder="XXXXX" maxlength="5">
+                        <button id="join-game-btn">Unir</button>
+                    </div>
+                    
+                     <div id="game-code-display" class="hidden">
+                        <p>¡Partida creada! Comparte este código:</p>
+                        <h3 class="room-code-display"></h3>
+                        <p>...o copia y comparte el enlace directo:</p>
+                        <div class="share-link-wrapper">
+                            <input type="text" id="game-link-text" readonly>
+                            <button id="copy-link-btn">Copiar Enlace</button>
+                        </div>
+                        <p>Esperando a que el retado se una...</p>
+                    </div>
                 </div>
-                <p>Esperando a que el retado se una...</p>
+
+                <div id="game-container" class="hidden">
+                    
+                    <div id="retador-info" class="hidden">
+                        <p>¡Eres el Retador! Palabra Secreta:</p>
+                        <h2 id="secret-word-display" style="color: var(--color-btn);">*****</h2>
+                    </div>
+                    
+                    <div id="game-grid">
+                        <div class="grid-row">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <div class="grid-row">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="guess-input-area">
+                        <input type="text" id="guess-input" maxlength="5" placeholder="Escribe 5 letras...">
+                        <button id="guess-btn">Intentar</button>
+                    </div>
+
+                    <p id="game-message"></p>
+                    
+                    <div id="end-game-buttons">
+                        <button id="reset-btn" class="hidden">Jugar de nuevo</button>
+                    </div>
+                    
+                    <div id="keyboard-container">
+                        <div class="keyboard-row">
+                            <button data-key="q">Q</button><button data-key="w">W</button><button data-key="e">E</button>
+                            <button data-key="r">R</button><button data-key="t">T</button><button data-key="y">Y</button>
+                            <button data-key="u">U</button><button data-key="i">I</button><button data-key="o">O</button>
+                            <button data-key="p">P</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button>
+                            <button data-key="f">F</button><button data-key="g">G</button><button data-key="h">H</button>
+                            <button data-key="j">J</button><button data-key="k">K</button><button data-key="l">L</button>
+                            <button data-key="ñ">Ñ</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button data-action="enter" class="action-key">ENTER</button>
+                            <button data-key="z">Z</button><button data-key="x">X</button><button data-key="c">C</button>
+                            <button data-key="v">V</button><button data-key="b">B</button><button data-key="n">N</button>
+                            <button data-key="m">M</button>
+                            <button data-action="del" class="action-key">⌫</button>
+                        </div>
+                    </div>
+
+                </div>
             </div>
+
+
+            <div id="tictactoe-game-area" data-game="tictactoe" class="hidden">
+                <h1>Tic-Tac-Toe (Tres en Raya)</h1>
+                
+                <div id="tictactoe-lobby-container" class="lobby-container">
+                    <h2>¡Únete a la Acción!</h2>
+                    <div class="lobby-section">
+                        <h3>Crear o Unirse</h3>
+                        <p>Sé el primero y juega con 'X', o únete a un código para ser 'O'.</p>
+                        <button id="tictactoe-create-btn">Crear Partida de X</button>
+                    </div>
+                    <div class="lobby-section">
+                        <input type="text" id="tictactoe-join-input" placeholder="Código de 5 letras" maxlength="5">
+                        <button id="tictactoe-join-btn">Unirse</button>
+                    </div>
+                    <div id="tictactoe-code-display" class="hidden">
+                        <p>Código:</p>
+                        <h3 class="room-code-display tictactoe-code">XXXXX</h3>
+                        <p>Esperando a que el jugador 'O' se una...</p>
+                    </div>
+                </div>
+
+                <div id="tictactoe-game-container" class="hidden">
+                    <h3 id="tictactoe-status">Esperando turno...</h3>
+                    
+                    <div id="tictactoe-board">
+                        <div class="tictactoe-cell" data-row="0" data-col="0"></div>
+                        <div class="tictactoe-cell" data-row="0" data-col="1"></div>
+                        <div class="tictactoe-cell" data-row="0" data-col="2"></div>
+                        
+                        <div class="tictactoe-cell" data-row="1" data-col="0"></div>
+                        <div class="tictactoe-cell" data-row="1" data-col="1"></div>
+                        <div class="tictactoe-cell" data-row="1" data-col="2"></div>
+                        
+                        <div class="tictactoe-cell" data-row="2" data-col="0"></div>
+                        <div class="tictactoe-cell" data-row="2" data-col="1"></div>
+                        <div class="tictactoe-cell" data-row="2" data-col="2"></div>
+                    </div>
+                    <button id="tictactoe-reset-btn" class="hidden">Volver al Lobby</button>
+                </div>
+            </div>
+
+            <div id="minesweeper-game-area" data-game="minesweeper" class="hidden">
+                <h1>Buscaminas (Multijugador)</h1>
+                <p>La lógica de Buscaminas es compleja y será implementada en una futura actualización.</p>
+            </div>
+
+            <div id="chess-game-area" data-game="chess" class="hidden">
+                <h1>Ajedrez</h1>
+                <p>La lógica de Ajedrez es muy compleja y será implementada en una futura actualización.</p>
+            </div>
+
         </div>
 
-
-        <div id="game-container" class="hidden">
-            
-            <div id="retador-info" class="hidden">
-                <p>¡Eres el Retador! Palabra Secreta:</p>
-                <h2 id="secret-word-display" style="color: var(--color-btn);">*****</h2>
-            </div>
-            
-            <div id="game-grid">
-                <div class="grid-row">
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                    <div class="grid-cell"></div>
-                </div>
-            </div>
-            
-            <div id="guess-input-area">
-                <input type="text" id="guess-input" maxlength="5" placeholder="Escribe 5 letras...">
-                <button id="guess-btn">Intentar</button>
-            </div>
-
-            <p id="game-message"></p>
-            
-            <div id="end-game-buttons">
-                <button id="reset-btn" class="hidden">Jugar de nuevo</button>
-            </div>
-            
-            <div id="keyboard-container">
-                <div class="keyboard-row">
-                    <button data-key="q">Q</button><button data-key="w">W</button><button data-key="e">E</button>
-                    <button data-key="r">R</button><button data-key="t">T</button><button data-key="y">Y</button>
-                    <button data-key="u">U</button><button data-key="i">I</button><button data-key="o">O</button>
-                    <button data-key="p">P</button>
-                </div>
-                <div class="keyboard-row">
-                    <button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button>
-                    <button data-key="f">F</button><button data-key="g">G</button><button data-key="h">H</button>
-                    <button data-key="j">J</button><button data-key="k">K</button><button data-key="l">L</button>
-                    <button data-key="ñ">Ñ</button>
-                </div>
-                <div class="keyboard-row">
-                    <button data-action="enter" class="action-key">ENTER</button>
-                    <button data-key="z">Z</button><button data-key="x">X</button><button data-key="c">C</button>
-                    <button data-key="v">V</button><button data-key="b">B</button><button data-key="n">N</button>
-                    <button data-key="m">M</button>
-                    <button data-action="del" class="action-key">⌫</button>
-                </div>
-            </div>
-
-        </div>
     </main>
 
     <script src="script.js" type="module"></script>
