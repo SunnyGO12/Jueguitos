@@ -41,6 +41,9 @@
     /* NUEVA VARIABLE DE COLOR: Azul Claro para celdas no reveladas */
     --color-mine-cell-light: #b0e0e6; /* Azul Claro (Powder Blue) */
     --color-mine-cell-dark: #375a7f;  /* Azul Oscuro para contraste en modo oscuro */
+    
+    /* NUEVA VARIABLE: Borde para que se vea la división en modo oscuro */
+    --color-mine-cell-border: #99a2ad; /* Borde más claro para modo oscuro */
 
 
     /* Colores UI */
@@ -542,20 +545,21 @@ body.dark-mode .tictactoe-cell:hover {
     display: grid;
     max-width: 400px; 
     margin: 20px auto;
-    border: 3px solid var(--color-border-light); /* Borde claro en ambos modos */
+    border: 3px solid var(--color-border-light); 
     aspect-ratio: 1 / 1; 
 }
 
 body.dark-mode #minesweeper-grid {
-    border-color: var(--color-border-light); /* Mantiene el borde claro para contraste con celdas oscuras */
+    border-color: var(--color-border-light); /* Mantiene el borde CLARO de la cuadrícula en modo oscuro */
 }
 
 .mine-cell {
     min-width: 30px; 
     min-height: 30px;
-    border: 1px solid var(--color-border-light);
+    /* Borde de celda en modo claro */
+    border: 1px solid var(--color-border-light); 
     
-    /* CAMBIO CRÍTICO: Fondo azul claro para celdas no reveladas (Modo Claro) */
+    /* FONDO AZUL CLARO para celdas no reveladas (Modo Claro) */
     background-color: var(--color-mine-cell-light); 
     
     display: flex;
@@ -567,14 +571,15 @@ body.dark-mode #minesweeper-grid {
     transition: background-color 0.1s;
     user-select: none;
     
-    color: var(--color-text-light); /* Asegura que la bandera/icono sea visible */
+    color: var(--color-text-light); 
 }
 
 body.dark-mode .mine-cell {
-    /* CAMBIO CRÍTICO: Fondo azul oscuro para celdas no reveladas (Modo Oscuro) */
+    /* FONDO AZUL OSCURO (para simular el azul claro en un tema oscuro) */
     background-color: var(--color-mine-cell-dark);
-    border-color: var(--color-border-dark);
-    color: var(--color-text-dark); /* Asegura que la bandera/icono sea visible */
+    /* Borde de celda en modo oscuro */
+    border-color: var(--color-border-dark); 
+    color: var(--color-text-dark); 
 }
 
 .mine-cell:not(.revealed):hover {
@@ -582,7 +587,7 @@ body.dark-mode .mine-cell {
 }
 
 .mine-cell.revealed {
-    background-color: var(--color-container-bg-light); /* Fondo claro si está revelado */
+    background-color: var(--color-container-bg-light); 
     color: var(--color-text-light);
     border: 1px solid var(--color-border-light);
     cursor: default;
