@@ -1,6 +1,5 @@
 // --- 1. Configuración de Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-// Importamos 'get' y 'update' para la lógica de validación (Mejora 4)
 import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 // Importamos nuestro diccionario
 import { DICCIONARIO } from './diccionario.js';
@@ -21,7 +20,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- 2. Elementos del DOM (Actualizado para las Mejoras) ---
+// --- 2. Elementos del DOM ---
+// Gestión de juegos
+const dashboardMenu = document.querySelector('.dashboard-menu');
+const gameContentWrapper = document.getElementById('game-content-wrapper');
+
+// Wordle
 const lobbyContainer = document.getElementById('lobby-container');
 const gameContainer = document.getElementById('game-container');
 const createGameBtn = document.getElementById('create-game-btn');
@@ -37,68 +41,68 @@ const guessInput = document.getElementById('guess-input');
 const guessBtn = document.getElementById('guess-btn');
 const gameMessage = document.getElementById('game-message');
 const resetBtn = document.getElementById('reset-btn');
-const darkModeToggle = document.getElementById('dark-mode-toggle');
-const toastContainer = document.getElementById('toast-container');
-
-// MEJORA 1: Elementos del retador
 const secretWordDisplay = document.getElementById('secret-word-display');
 const retadorInfo = document.getElementById('retador-info');
-// MEJORA 2: Elemento del teclado
 const keyboardContainer = document.getElementById('keyboard-container');
+
+// Tic-Tac-Toe
+const tictactoeCreateBtn = document.getElementById('tictactoe-create-btn');
+const tictactoeJoinBtn = document.getElementById('tictactoe-join-btn');
+const tictactoeJoinInput = document.getElementById('tictactoe-join-input');
+const tictactoeCodeDisplay = document.getElementById('tictactoe-code-display');
+const tictactoeGameContainer = document.getElementById('tictactoe-game-container');
+const tictactoeBoard = document.getElementById('tictactoe-board');
+const tictactoeStatus = document.getElementById('tictactoe-status');
+const tictactoeResetBtn = document.getElementById('tictactoe-reset-btn');
+
+const darkModeToggle = document.getElementById('dark-mode-toggle');
+const toastContainer = document.getElementById('toast-container');
 
 // --- 3. Variables de Estado Global ---
 let currentGameID = null;
 let playerRole = null;
 let secretWord = null; 
 let isGameActive = false;
-let gameListener = null; // Listener del juego activo
-let statusListener = null; // Listener de estado del lobby (para el Retador)
+let gameListener = null; // Listener de la partida activa
+let statusListener = null; // Listener de estado del lobby
+let currentActiveGame = 'wordle'; // El juego que se está mostrando
 
-// --- 4. Event Listeners (Actualizado para las Mejoras) ---
-createGameBtn.addEventListener('click', crearPartida);
-joinGameBtn.addEventListener('click', unirseAPartida);
+// --- 4. Event Listeners ---
+// Gestión de juegos
+dashboardMenu.addEventListener('click', handleMenuClick);
+
+// Wordle
+createGameBtn.addEventListener('click', crearPartidaWordle);
+joinGameBtn.addEventListener('click', unirseAPartidaWordle);
 copyLinkBtn.addEventListener('click', copiarEnlace);
-guessBtn.addEventListener('click', handleGuess);
-
-// Permitir 'Enter' en el input de adivinanza
+guessBtn.addEventListener('click', handleGuessWordle);
 guessInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleGuess();
+    if (e.key === 'Enter') handleGuessWordle();
 });
-
-// MEJORA 2: Listener para el teclado en pantalla
 if (keyboardContainer) {
-    keyboardContainer.addEventListener('click', (e) => {
-        const key = e.target.getAttribute('data-key');
-        const action = e.target.getAttribute('data-action');
-        
-        if (!isGameActive || playerRole !== 'retado') return;
-
-        if (key) {
-            // Escribe la letra (convertir a mayúscula para el input, pero la lógica interna usa minúscula)
-            guessInput.value += key.toUpperCase();
-        } else if (action === 'enter') {
-            handleGuess();
-        } else if (action === 'del') {
-            // Borrar el último carácter
-            guessInput.value = guessInput.value.slice(0, -1);
-        }
-        
-        // Asegurarse de que solo haya 5 caracteres en el input
-        guessInput.value = guessInput.value.slice(0, 5);
-        
-        // Enfocar el input para una posible entrada de teclado física posterior
-        guessInput.focus(); 
-    });
+    keyboardContainer.addEventListener('click', handleKeyboardClick);
 }
 
+// Tic-Tac-Toe
+tictactoeCreateBtn.addEventListener('click', crearPartidaTicTacToe);
+tictactoeJoinBtn.addEventListener('click', unirseAPartidaTicTacToe);
+tictactoeBoard.addEventListener('click', handleTicTacToeClick);
+tictactoeResetBtn.addEventListener('click', handleResetClick);
+
+// Configuración inicial
 document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
     }
+    // Inicializar el dashboard en Wordle
+    handleMenuClick(null, 'wordle'); 
+
+    // Lógica para unirse a través de URL hash (asumiendo Wordle por defecto si no se especifica)
     if (window.location.hash) {
         const gameCodeFromURL = window.location.hash.substring(1).toUpperCase();
-        joinCodeInput.value = gameCodeFromURL;
+        // Por simplicidad, solo pre-rellenamos el input de Wordle
+        joinCodeInput.value = gameCodeFromURL; 
         showToast("Código de partida cargado desde el enlace.", 'success');
     }
 });
@@ -111,7 +115,59 @@ darkModeToggle.addEventListener('click', () => {
 });
 
 
-// --- 5. Funciones Principales (Firebase) ---
+// --- GESTIÓN DE JUEGOS ---
+
+function handleMenuClick(event, gameIdOverride) {
+    if (event) {
+        event.preventDefault();
+        const target = event.target.closest('a');
+        if (!target) return;
+        currentActiveGame = target.getAttribute('data-game');
+    } else if (gameIdOverride) {
+        currentActiveGame = gameIdOverride;
+    }
+
+    // Ocultar todos los contenedores de juego
+    document.querySelectorAll('[data-game]').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('active-game');
+    });
+
+    // Mostrar solo el contenedor del juego activo
+    const activeGameArea = document.getElementById(`${currentActiveGame}-game-area`);
+    if (activeGameArea) {
+        activeGameArea.classList.remove('hidden');
+        activeGameArea.classList.add('active-game');
+    }
+
+    // Actualizar el estilo "active" en el menú
+    document.querySelectorAll('.dashboard-menu a').forEach(a => {
+        a.classList.remove('active');
+        if (a.getAttribute('data-game') === currentActiveGame) {
+            a.classList.add('active');
+        }
+    });
+
+    // Limpiar estado y desconectar listeners al cambiar de juego
+    resetGameListeners();
+    currentGameID = null;
+    isGameActive = false;
+    playerRole = null;
+}
+
+function resetGameListeners() {
+    if (gameListener) {
+        gameListener();
+        gameListener = null;
+    }
+    if (statusListener) {
+        statusListener();
+        statusListener = null;
+    }
+}
+
+
+// --- LÓGICA GENERAL ---
 
 function generarCodigo(longitud) {
     let codigo = '';
@@ -134,103 +190,6 @@ async function generarCodigoUnico() {
     return codigoUnico;
 }
 
-async function crearPartida() {
-    const word = secretWordInput.value.trim().toLowerCase();
-
-    // Validación de 5 letras
-    if (word.length !== 5) {
-        showToast("¡La palabra debe tener exactamente 5 letras!");
-        applyAnimation(secretWordInput, 'shake');
-        return;
-    }
-    // Validación de solo letras
-    if (!/^[a-zñ]+$/.test(word)) {
-        showToast("¡La palabra solo debe contener letras!");
-        applyAnimation(secretWordInput, 'shake');
-        return;
-    }
-    
-    // Validación de Diccionario
-    if (!DICCIONARIO.has(word)) {
-        showToast("La palabra no está en nuestro diccionario.");
-        applyAnimation(secretWordInput, 'shake');
-        return;
-    }
-
-    createGameBtn.disabled = true;
-    createGameBtn.textContent = "Creando...";
-
-    currentGameID = await generarCodigoUnico();
-    const newGameRef = ref(db, `games/${currentGameID}`);
-
-    document.getElementById('create-section').classList.add('hidden');
-    document.getElementById('join-section').classList.add('hidden');
-    createGameBtn.disabled = false;
-    createGameBtn.textContent = "Crear";
-    
-    set(newGameRef, {
-        secretWord: word, 
-        status: 'waiting',
-        intentos: {}
-    });
-
-    playerRole = 'retador';
-    secretWord = word;
-    
-    const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
-    
-    roomCodeDisplay.textContent = currentGameID;
-    gameLinkText.value = gameURL;
-    gameCodeDisplay.classList.remove('hidden');
-
-    // El retador se queda en el lobby, escuchando a que alguien se una.
-    const gameStatusRef = ref(db, `games/${currentGameID}/status`);
-    // Usamos statusListener para poder desconectarlo después (Mejora 5)
-    statusListener = onValue(gameStatusRef, (snapshot) => {
-        if (snapshot.val() === 'active') {
-            iniciarJuego('retador');
-        }
-    });
-}
-
-function unirseAPartida() {
-    let code = joinCodeInput.value.trim().toUpperCase();
-    
-    if (code.includes('#')) {
-        code = code.split('#')[1].toUpperCase();
-    }
-    
-    // Validación de código de 5 letras (mayúsculas)
-    if (code.length !== 5 || !/^[A-Z]+$/.test(code)) {
-        showToast("El código debe tener 5 letras.");
-        applyAnimation(joinCodeInput, 'shake');
-        return;
-    }
-
-    const gameRef = ref(db, `games/${code}`);
-
-    get(gameRef).then((snapshot) => {
-        if (!snapshot.exists()) {
-            showToast("No se encontró esa partida. Revisa el código.");
-            applyAnimation(joinCodeInput, 'shake');
-        } else if (snapshot.val().status === 'active') {
-            showToast("Esta partida ya está en progreso.");
-        } else {
-            currentGameID = code;
-            playerRole = 'retado';
-            secretWord = snapshot.val().secretWord; 
-            
-            update(gameRef, { status: 'active' });
-            window.history.replaceState(null, '', window.location.pathname);
-            
-            iniciarJuego('retado');
-        }
-    }).catch((error) => {
-        console.error("Error al unirse a la partida:", error);
-        showToast("Error de red. Inténtalo de nuevo.");
-    });
-}
-
 function copiarEnlace() {
     gameLinkText.select();
     gameLinkText.setSelectionRange(0, 99999);
@@ -243,8 +202,99 @@ function copiarEnlace() {
     });
 }
 
-// MEJORA 1: Lógica para mostrar info al retador
-function iniciarJuego(role) {
+function handleResetClick() {
+    resetGameListeners();
+    window.location.reload();
+}
+
+// --- LÓGICA WORDLE ---
+
+async function crearPartidaWordle() {
+    const word = secretWordInput.value.trim().toLowerCase();
+
+    if (word.length !== 5 || !/^[a-zñ]+$/.test(word)) {
+        showToast("¡La palabra debe tener 5 letras válidas!");
+        applyAnimation(secretWordInput, 'shake');
+        return;
+    }
+    
+    if (!DICCIONARIO.has(word)) {
+        showToast("La palabra no está en nuestro diccionario.");
+        applyAnimation(secretWordInput, 'shake');
+        return;
+    }
+
+    createGameBtn.disabled = true;
+    createGameBtn.textContent = "Creando...";
+    resetGameListeners(); // Limpiar listeners anteriores
+
+    currentGameID = await generarCodigoUnico();
+    const newGameRef = ref(db, `games/${currentGameID}`);
+    
+    set(newGameRef, {
+        gameType: 'wordle', // Identificar el tipo de juego
+        secretWord: word, 
+        status: 'waiting',
+        intentos: {}
+    });
+
+    playerRole = 'retador';
+    secretWord = word; 
+
+    document.getElementById('create-section').classList.add('hidden');
+    document.getElementById('join-section').classList.add('hidden');
+    createGameBtn.disabled = false;
+    createGameBtn.textContent = "Crear";
+    
+    const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
+    
+    roomCodeDisplay.textContent = currentGameID;
+    gameLinkText.value = gameURL;
+    gameCodeDisplay.classList.remove('hidden');
+
+    const gameStatusRef = ref(db, `games/${currentGameID}/status`);
+    statusListener = onValue(gameStatusRef, (snapshot) => {
+        if (snapshot.val() === 'active') {
+            iniciarJuegoWordle('retador');
+        }
+    });
+}
+
+function unirseAPartidaWordle() {
+    let code = joinCodeInput.value.trim().toUpperCase();
+    
+    if (code.includes('#')) {
+        code = code.split('#')[1].toUpperCase();
+    }
+    
+    if (code.length !== 5 || !/^[A-Z]+$/.test(code)) {
+        showToast("El código debe tener 5 letras.");
+        applyAnimation(joinCodeInput, 'shake');
+        return;
+    }
+
+    const gameRef = ref(db, `games/${code}`);
+
+    get(gameRef).then((snapshot) => {
+        const data = snapshot.val();
+        if (!snapshot.exists() || data.gameType !== 'wordle') {
+            showToast("No se encontró esa partida de Wordle.");
+        } else if (data.status === 'active') {
+            showToast("Esta partida ya está en progreso.");
+        } else {
+            currentGameID = code;
+            playerRole = 'retado';
+            secretWord = data.secretWord; 
+            
+            update(gameRef, { status: 'active' });
+            window.history.replaceState(null, '', window.location.pathname);
+            
+            iniciarJuegoWordle('retado');
+        }
+    });
+}
+
+function iniciarJuegoWordle(role) {
     playerRole = role;
     
     lobbyContainer.classList.add('hidden');
@@ -256,11 +306,10 @@ function iniciarJuego(role) {
         guessBtn.disabled = true;
         gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
         
-        // Mostrar la palabra secreta
         retadorInfo.classList.remove('hidden');
         secretWordDisplay.textContent = secretWord.toUpperCase();
         
-    } else {
+    } else { // Retado
         guessInput.disabled = false;
         guessBtn.disabled = false;
         guessInput.focus();
@@ -268,57 +317,18 @@ function iniciarJuego(role) {
         retadorInfo.classList.add('hidden');
     }
 
-    // MEJORA 5: Desconecta el listener de status del lobby si estaba activo
     if (statusListener) {
         statusListener(); 
-        statusListener = null; 
+        statusListener = null;
     }
 
-    sincronizarJuego();
+    sincronizarJuegoWordle();
 }
 
-// MEJORA 3: Lógica para actualizar los colores del teclado
-function actualizarTeclado(intentos) {
-    const letterStatus = {}; // { 'A': 'correct', 'B': 'present', 'C': 'absent' }
-    
-    // Iterar sobre todos los intentos para encontrar el estado MÁS alto de cada letra
-    intentos.forEach(intento => {
-        const guess = intento.guess;
-        const states = intento.states;
-        
-        for (let i = 0; i < 5; i++) {
-            const letter = guess[i].toUpperCase();
-            const state = states[i];
-            
-            // Prioridad: 'correct' > 'present' > 'absent'
-            if (state === 'correct') {
-                letterStatus[letter] = 'correct';
-            } else if (state === 'present' && letterStatus[letter] !== 'correct') {
-                letterStatus[letter] = 'present';
-            } else if (!letterStatus[letter] && state === 'absent') { 
-                 letterStatus[letter] = 'absent';
-            }
-        }
-    });
-    
-    // Aplicar los estilos
-    document.querySelectorAll('#keyboard-container button').forEach(button => {
-        const key = button.getAttribute('data-key')?.toUpperCase();
-        if (key && letterStatus[key]) {
-            // Limpia las clases de color existentes
-            button.classList.remove('keyboard-correct', 'keyboard-present', 'keyboard-absent'); 
-            button.classList.add(`keyboard-${letterStatus[key]}`);
-        }
-    });
-}
-
-function sincronizarJuego() {
+function sincronizarJuegoWordle() {
     const gameRef = ref(db, `games/${currentGameID}`);
     
-    // Si ya existe un listener del juego, lo desconectamos para evitar duplicados (Mejora 5)
-    if (gameListener) {
-        gameListener();
-    }
+    resetGameListeners(); // Limpiar listeners anteriores
     
     gameListener = onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
@@ -329,8 +339,8 @@ function sincronizarJuego() {
             intentosArray = Object.values(data.intentos);
         }
         
-        renderizarGrid(intentosArray);
-        actualizarTeclado(intentosArray); // MEJORA 3
+        renderizarGridWordle(intentosArray);
+        actualizarTecladoWordle(intentosArray);
             
         if (intentosArray.length > 0) {
             const ultimoIntento = intentosArray[intentosArray.length - 1];
@@ -338,65 +348,61 @@ function sincronizarJuego() {
             if (ultimoIntento.guess === secretWord) {
                 gameMessage.textContent = `¡El retado ha ganado! La palabra era ${secretWord.toUpperCase()}.`;
                 if (playerRole === 'retado') {
-                    triggerVictoryAnimation(intentosArray.length - 1);
+                    triggerVictoryAnimationWordle(intentosArray.length - 1);
                 }
-                endGame();
+                endGameWordle();
             } else if (intentosArray.length === 5) {
                 gameMessage.textContent = `¡El retado ha perdido! La palabra era ${secretWord.toUpperCase()}.`;
-                endGame();
+                endGameWordle();
             }
         }
     });
 }
 
-// MEJORA 4: Lógica de validación de intento refactorizada
-async function handleGuess() {
+function handleGuessWordle() {
     if (!isGameActive || playerRole !== 'retado') return;
     
     const guess = guessInput.value.trim().toLowerCase();
     
-    // 1. Obtener el estado actual para saber en qué fila estamos
-    const gameRef = ref(db, `games/${currentGameID}`);
-    const snapshot = await get(gameRef);
-    const data = snapshot.val();
-    const intentosArray = data.intentos ? Object.values(data.intentos) : [];
-    const currentRowIndex = intentosArray.length;
-    
-    if (currentRowIndex >= 5) {
-        showToast("Se acabaron los intentos.");
-        return;
-    }
-    
-    const currentRowElement = gameGrid.children[currentRowIndex];
+    get(ref(db, `games/${currentGameID}`)).then(snapshot => {
+        const data = snapshot.val();
+        const intentosArray = data.intentos ? Object.values(data.intentos) : [];
+        const currentRowIndex = intentosArray.length;
+        
+        if (currentRowIndex >= 5) {
+            showToast("Se acabaron los intentos.");
+            return;
+        }
+        
+        const currentRowElement = gameGrid.children[currentRowIndex];
 
-    if (guess.length !== 5) {
-        showToast("¡Tu intento debe tener 5 letras!");
-        applyAnimation(guessInput, 'shake');
-        return;
-    }
-    
-    // 2. Validación de Diccionario
-    if (!DICCIONARIO.has(guess)) {
-        showToast("Esa palabra no está en el diccionario.");
-        // Aplicar animación de shake a la fila de la cuadrícula
-        applyAnimation(currentRowElement, 'shake'); 
-        return;
-    }
+        if (guess.length !== 5) {
+            showToast("¡Tu intento debe tener 5 letras!");
+            applyAnimation(guessInput, 'shake');
+            return;
+        }
+        
+        if (!DICCIONARIO.has(guess)) {
+            showToast("Esa palabra no está en el diccionario.");
+            applyAnimation(currentRowElement, 'shake'); 
+            return;
+        }
 
-    // 3. Procesar y Guardar el intento
-    const cellStates = procesarLogicaIntento(guess, secretWord);
-    
-    const intentosRef = ref(db, `games/${currentGameID}/intentos`);
-    const newIntentRef = push(intentosRef);
-    set(newIntentRef, {
-        guess: guess, 
-        states: cellStates
+        const cellStates = procesarLogicaIntentoWordle(guess, secretWord);
+        
+        const intentosRef = ref(db, `games/${currentGameID}/intentos`);
+        const newIntentRef = push(intentosRef);
+        set(newIntentRef, {
+            guess: guess, 
+            states: cellStates
+        });
+
+        guessInput.value = "";
     });
-
-    guessInput.value = "";
 }
 
-function renderizarGrid(intentos) {
+function renderizarGridWordle(intentos) {
+    // Reset Grid
     for (let i = 0; i < 5; i++) {
         const row = gameGrid.children[i];
         for (let j = 0; j < 5; j++) {
@@ -406,6 +412,7 @@ function renderizarGrid(intentos) {
         }
     }
     
+    // Fill Grid
     intentos.forEach((intento, rowIndex) => {
         const row = gameGrid.children[rowIndex];
         const guess = intento.guess;
@@ -416,7 +423,6 @@ function renderizarGrid(intentos) {
             cell.textContent = guess[i].toUpperCase(); 
             cell.classList.add(`cell-${states[i]}`);
             
-            // Añadir animación de volteo
             if (rowIndex === intentos.length - 1 && !cell.classList.contains('cell-reveal')) {
                  setTimeout(() => {
                     cell.classList.add('cell-reveal');
@@ -428,15 +434,62 @@ function renderizarGrid(intentos) {
     });
 }
 
-/**
- * Lógica pura de Wordle (todo en minúsculas)
- */
-function procesarLogicaIntento(guess, secret) {
+function actualizarTecladoWordle(intentos) {
+    const letterStatus = {}; 
+    
+    intentos.forEach(intento => {
+        const guess = intento.guess;
+        const states = intento.states;
+        
+        for (let i = 0; i < 5; i++) {
+            const letter = guess[i].toUpperCase();
+            const state = states[i];
+            
+            if (state === 'correct') {
+                letterStatus[letter] = 'correct';
+            } else if (state === 'present' && letterStatus[letter] !== 'correct') {
+                letterStatus[letter] = 'present';
+            } else if (!letterStatus[letter] && state === 'absent') { 
+                 letterStatus[letter] = 'absent';
+            }
+        }
+    });
+    
+    document.querySelectorAll('#keyboard-container button').forEach(button => {
+        const key = button.getAttribute('data-key')?.toUpperCase();
+        if (key && letterStatus[key]) {
+            button.classList.remove('keyboard-correct', 'keyboard-present', 'keyboard-absent'); 
+            button.classList.add(`keyboard-${letterStatus[key]}`);
+        }
+    });
+}
+
+function handleKeyboardClick(e) {
+    const key = e.target.getAttribute('data-key');
+    const action = e.target.getAttribute('data-action');
+    
+    if (!isGameActive || playerRole !== 'retado' || currentActiveGame !== 'wordle') return;
+
+    if (key) {
+        guessInput.value += key.toUpperCase();
+    } else if (action === 'enter') {
+        handleGuessWordle();
+    } else if (action === 'del') {
+        guessInput.value = guessInput.value.slice(0, -1);
+    }
+    
+    guessInput.value = guessInput.value.slice(0, 5);
+    guessInput.focus(); 
+}
+
+function procesarLogicaIntentoWordle(guess, secret) {
     const secretWordMap = {};
     for (const letter of secret) {
         secretWordMap[letter] = (secretWordMap[letter] || 0) + 1;
     }
     const cellStates = Array(5).fill('absent');
+    
+    // 1. Marcar CORRECT
     for (let i = 0; i < 5; i++) {
         const letter = guess[i];
         if (letter === secret[i]) {
@@ -444,6 +497,7 @@ function procesarLogicaIntento(guess, secret) {
             secretWordMap[letter]--;
         }
     }
+    // 2. Marcar PRESENT
     for (let i = 0; i < 5; i++) {
         if (cellStates[i] === 'correct') continue;
         const letter = guess[i];
@@ -455,39 +509,7 @@ function procesarLogicaIntento(guess, secret) {
     return cellStates;
 }
 
-// MEJORA 5: Desconexión explícita de listeners
-function endGame() {
-    isGameActive = false;
-    guessInput.disabled = true;
-    guessBtn.disabled = true;
-
-    // Desconecta el listener de la partida
-    if (gameListener) {
-        gameListener(); 
-        gameListener = null;
-    }
-    
-    resetBtn.classList.remove('hidden');
-    resetBtn.textContent = "Volver al Lobby";
-    // Asegurarse de que el listener de recarga se desconecte si se llama a endGame
-    resetBtn.removeEventListener('click', handleResetClick); 
-    resetBtn.addEventListener('click', handleResetClick, { once: true });
-}
-
-function handleResetClick() {
-    // Asegurarse de que no haya listeners activos antes de la recarga
-    if (gameListener) {
-        gameListener();
-    }
-    if (statusListener) {
-        statusListener();
-    }
-    window.location.reload();
-}
-
-
-// --- 7. Funciones de Utilidad (Animaciones y Toasts) ---
-function triggerVictoryAnimation(rowIndex) {
+function triggerVictoryAnimationWordle(rowIndex) {
     const winningRow = gameGrid.children[rowIndex]; 
     for (let i = 0; i < 5; i++) {
         const cell = winningRow.children[i];
@@ -496,6 +518,211 @@ function triggerVictoryAnimation(rowIndex) {
         }, i * 100);
     }
 }
+
+function endGameWordle() {
+    isGameActive = false;
+    guessInput.disabled = true;
+    guessBtn.disabled = true;
+    resetGameListeners();
+    
+    resetBtn.classList.remove('hidden');
+    resetBtn.textContent = "Volver al Lobby";
+    resetBtn.removeEventListener('click', handleResetClick); 
+    resetBtn.addEventListener('click', handleResetClick, { once: true });
+}
+
+
+// --- LÓGICA TIC-TAC-TOE ---
+
+async function crearPartidaTicTacToe() {
+    tictactoeCreateBtn.disabled = true;
+    tictactoeCreateBtn.textContent = "Creando...";
+    resetGameListeners();
+
+    currentGameID = await generarCodigoUnico();
+    const newGameRef = ref(db, `games/${currentGameID}`);
+
+    set(newGameRef, {
+        gameType: 'tictactoe',
+        status: 'waiting',
+        playerX: 'creator', 
+        playerO: null,
+        board: [["", "", ""], ["", "", ""], ["", "", ""]],
+        currentTurn: 'X',
+        winner: null
+    });
+
+    playerRole = 'X';
+    
+    tictactoeCreateBtn.disabled = false;
+    tictactoeCreateBtn.textContent = "Crear Partida de X";
+    
+    document.getElementById('tictactoe-lobby-container').querySelectorAll('.lobby-section').forEach(el => el.classList.add('hidden'));
+    tictactoeCodeDisplay.classList.remove('hidden');
+    document.querySelector('.tictactoe-code').textContent = currentGameID;
+    tictactoeStatus.textContent = "Esperando a que el jugador 'O' se una...";
+
+    const gameStatusRef = ref(db, `games/${currentGameID}/status`);
+    statusListener = onValue(gameStatusRef, (snapshot) => {
+        if (snapshot.val() === 'active') {
+            iniciarTicTacToe('X');
+        }
+    });
+}
+
+function unirseAPartidaTicTacToe() {
+    const code = tictactoeJoinInput.value.trim().toUpperCase();
+    
+    if (code.length !== 5) {
+        showToast("El código debe tener 5 letras.");
+        applyAnimation(tictactoeJoinInput, 'shake');
+        return;
+    }
+
+    const gameRef = ref(db, `games/${code}`);
+
+    get(gameRef).then((snapshot) => {
+        const data = snapshot.val();
+        if (!snapshot.exists() || data.gameType !== 'tictactoe') {
+            showToast("No se encontró esa partida de Tic-Tac-Toe.");
+        } else if (data.status === 'active') {
+            showToast("Esta partida ya está en progreso.");
+        } else {
+            currentGameID = code;
+            playerRole = 'O'; 
+            
+            update(gameRef, { status: 'active', playerO: 'joiner' });
+            
+            iniciarTicTacToe('O');
+        }
+    });
+}
+
+function iniciarTicTacToe(role) {
+    playerRole = role;
+    
+    document.getElementById('tictactoe-lobby-container').classList.add('hidden');
+    tictactoeGameContainer.classList.remove('hidden');
+    isGameActive = true;
+
+    if (statusListener) {
+        statusListener(); 
+        statusListener = null;
+    }
+
+    sincronizarTicTacToe();
+}
+
+function sincronizarTicTacToe() {
+    const gameRef = ref(db, `games/${currentGameID}`);
+    
+    resetGameListeners();
+    
+    gameListener = onValue(gameRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        renderTicTacToeBoard(data.board);
+        
+        if (data.winner) {
+            tictactoeStatus.textContent = data.winner === 'Draw' ? "¡Empate!" : `¡Ganó el jugador ${data.winner}!`;
+            endTicTacToe();
+        } else {
+            const isMyTurn = data.currentTurn === playerRole;
+            tictactoeStatus.textContent = isMyTurn ? `¡Tu Turno! Eres ${playerRole}` : `Turno del oponente (${data.currentTurn})`;
+        }
+    });
+}
+
+function renderTicTacToeBoard(board) {
+    tictactoeBoard.querySelectorAll('.tictactoe-cell').forEach(cell => {
+        const row = parseInt(cell.getAttribute('data-row'));
+        const col = parseInt(cell.getAttribute('data-col'));
+        const value = board[row][col];
+        
+        cell.textContent = value;
+        cell.className = 'tictactoe-cell'; 
+        if (value) {
+            cell.classList.add(value); 
+        }
+    });
+}
+
+function handleTicTacToeClick(e) {
+    const cell = e.target.closest('.tictactoe-cell');
+    if (!cell || !isGameActive) return;
+
+    const row = parseInt(cell.getAttribute('data-row'));
+    const col = parseInt(cell.getAttribute('data-col'));
+    
+    const gameRef = ref(db, `games/${currentGameID}`);
+    get(gameRef).then(snapshot => {
+        const data = snapshot.val();
+        
+        if (data.winner) {
+            showToast("El juego ha terminado.");
+            return;
+        }
+
+        if (data.currentTurn !== playerRole) {
+            showToast("¡No es tu turno!");
+            return;
+        }
+
+        if (data.board[row][col] !== "") {
+            showToast("Esa celda ya está ocupada.");
+            return;
+        }
+
+        let newBoard = [...data.board.map(r => [...r])]; 
+        newBoard[row][col] = playerRole;
+        
+        const winner = checkWinner(newBoard);
+        const nextTurn = playerRole === 'X' ? 'O' : 'X';
+        
+        update(gameRef, {
+            board: newBoard,
+            currentTurn: winner ? data.currentTurn : nextTurn, 
+            winner: winner
+        });
+    });
+}
+
+function checkWinner(board) {
+    const lines = [
+        [board[0][0], board[0][1], board[0][2]],
+        [board[1][0], board[1][1], board[1][2]],
+        [board[2][0], board[2][1], board[2][2]],
+        [board[0][0], board[1][0], board[2][0]],
+        [board[0][1], board[1][1], board[2][1]],
+        [board[0][2], board[1][2], board[2][2]],
+        [board[0][0], board[1][1], board[2][2]],
+        [board[0][2], board[1][1], board[2][0]],
+    ];
+
+    for (const line of lines) {
+        if (line.every(cell => cell === 'X')) return 'X';
+        if (line.every(cell => cell === 'O')) return 'O';
+    }
+
+    if (board.flat().every(cell => cell !== "")) {
+        return 'Draw';
+    }
+
+    return null;
+}
+
+function endTicTacToe() {
+    isGameActive = false;
+    resetGameListeners();
+
+    tictactoeResetBtn.classList.remove('hidden');
+    tictactoeResetBtn.textContent = "Volver a jugar";
+    tictactoeResetBtn.removeEventListener('click', handleResetClick); 
+    tictactoeResetBtn.addEventListener('click', handleResetClick, { once: true });
+}
+
+// --- FUNCIONES DE UTILIDAD ---
 
 function showToast(message, type = 'error') {
     const toast = document.createElement('div');
