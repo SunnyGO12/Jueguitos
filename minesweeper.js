@@ -52,7 +52,6 @@ const P_JOINER = 'P2';
 
 /**
  * Genera el tablero de minas y números (solo se llama en el creador).
- * El valor de la celda es: -1 (Mina), 0..8 (Número de minas adyacentes)
  */
 function generateMinesweeperBoard(size, mines) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
@@ -89,11 +88,11 @@ function generateMinesweeperBoard(size, mines) {
         }
     }
     
-    // El estado del juego requiere dos matrices: el tablero (minas/números) y la vista (revelada/marcada)
+    // Matriz de vista inicial
     let view = Array(size).fill(0).map(() => Array(size).fill({
         revealed: false,
         flagged: false,
-        player: null // P1 o P2 si fue revelada por un jugador
+        player: null
     }));
 
     return { board, view, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
@@ -217,8 +216,9 @@ function iniciarJuegoMinesweeper(role) {
         statusListener = null;
     }
     
-    minesweeperGrid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
-    minesweeperGrid.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+    // El setup de la cuadrícula ya se hizo en initializeGridDisplay()
+    // Pero lo llamamos aquí también para asegurar el estado inicial
+    initializeGridDisplay(); 
 
     sincronizarMinesweeper();
 }
@@ -233,7 +233,7 @@ function sincronizarMinesweeper() {
         renderMinesweeperGrid(data.view, data.board);
         updateScoreboard(data);
 
-        // Lógica de fin de juego (CORREGIDA)
+        // Lógica de fin de juego
         if (data.winner) {
             const opponentRole = data.winner === P_CREATOR ? P_JOINER : P_CREATOR;
             if (data.winner === playerRole) {
@@ -244,7 +244,6 @@ function sincronizarMinesweeper() {
             endGameMinesweeper();
             
         } else if (data.remainingMines === 0) {
-            // Si el juego termina porque todas las minas fueron encontradas (sin perder)
             const finalMessage = data.scoreP1 > data.scoreP2 ? `P1 gana con ${data.scoreP1} puntos.` : (data.scoreP2 > data.scoreP1 ? `P2 gana con ${data.scoreP2} puntos.` : "¡Empate!");
             endGameMinesweeper(finalMessage);
         }
@@ -260,8 +259,29 @@ function updateScoreboard(data) {
 
 // --- 6. Manejo de Interacción y Renderizado ---
 
+/**
+ * Función CRÍTICA para que el tablero se muestre al cargar el lobby.
+ */
+function initializeGridDisplay() {
+    minesweeperGrid.innerHTML = ''; 
+    minesweeperGrid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+    minesweeperGrid.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+    
+    // Crear celdas vacías para que el div #minesweeper-grid tenga contenido
+    for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+            const cell = document.createElement('div');
+            cell.classList.add('mine-cell');
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            minesweeperGrid.appendChild(cell);
+        }
+    }
+}
+
+
 function renderMinesweeperGrid(view, board) {
-    minesweeperGrid.innerHTML = ''; // Limpiar grid
+    minesweeperGrid.innerHTML = ''; // Limpiar grid (Necesario si la estructura es dinámica)
     
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
@@ -278,7 +298,6 @@ function renderMinesweeperGrid(view, board) {
                 
                 if (cellValue === -1) {
                     cell.textContent = '💣';
-                    // Si el juego terminó, marcamos la mina que causó la derrota
                     if (cellData.player) {
                          cell.classList.add(cellData.player); 
                     }
@@ -306,8 +325,6 @@ function handleMinesweeperClick(e) {
     if (e.button === 0) {
         revealCell(r, c);
     }
-    // 2. Manejar Clic Derecho (Marcar/Bandera)
-    // NOTA: La lógica de bandera se maneja en 'contextmenu'
 }
 
 // Lógica CRÍTICA de Buscaminas (CORREGIDA)
@@ -351,7 +368,7 @@ function revealCell(r, c) {
             scoreP1: newScoreP1,
             scoreP2: newScoreP2,
             remainingMines: newRemainingMines,
-            winner: gameResult // Se actualizará si hay derrota
+            winner: gameResult 
         });
     });
 }
@@ -370,8 +387,7 @@ minesweeperCreateBtn.addEventListener('click', crearPartidaMinesweeper);
 minesweeperJoinBtn.addEventListener('click', unirseAPartidaMinesweeper); 
 minesweeperGrid.addEventListener('click', handleMinesweeperClick); 
 minesweeperGrid.addEventListener('contextmenu', (e) => {
-    e.preventDefault(); // Prevenir menú contextual
-    // Implementar lógica de Bandera aquí si es necesario
+    e.preventDefault(); 
 });
 
 
@@ -411,6 +427,8 @@ function applyAnimation(element, animationClass) {
 
 document.addEventListener('DOMContentLoaded', () => {
     setActiveMenu(); 
+    initializeGridDisplay(); // Llamada CRÍTICA para que el tablero se muestre en el lobby
+    
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
