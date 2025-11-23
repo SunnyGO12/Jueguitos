@@ -340,11 +340,6 @@ function renderMinesweeperGrid(view, board) {
     }
 }
 
-/**
- * Función para manejar los clics.
- * Clic izquierdo (e.button === 0): Revelar.
- * Clic derecho (e.button === 2): Bandera.
- */
 function handleMinesweeperClick(e) {
     const cell = e.target.closest('.mine-cell');
     if (!cell || !isGameActive) return;
@@ -358,7 +353,6 @@ function handleMinesweeperClick(e) {
     } 
 }
 
-// Función para manejar el clic derecho (necesita un event listener de 'contextmenu' en DOMContentLoaded)
 function handleFlag(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
@@ -406,7 +400,7 @@ function revealCell(r, c) {
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
         } else if (newBoard[r][c] > 0) {
-            // Número: Revela la celda y suma puntos.
+            // Número: CORRECCIÓN CRÍTICA: Revela la celda y suma puntos.
             newView[r][c].revealed = true;
             newView[r][c].player = playerRole;
 
