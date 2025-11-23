@@ -96,13 +96,12 @@ function generateMinesweeperBoard(size, mines) {
         player: null // P1 o P2 si fue revelada por un jugador
     }));
 
-    return { board, view, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines };
+    return { board, view, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
 }
 
 
 // --- 5. Funciones Principales (Firebase) ---
 
-// (Copiamos las funciones de utilidad de Firebase y de UI)
 function generarCodigo(longitud) {
     let codigo = '';
     const CARACTERES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -140,7 +139,7 @@ function handleResetClick() {
     window.location.reload(); 
 }
 
-async function crearPartidaTicTacToe() { // Cambiamos el nombre a Buscaminas
+async function crearPartidaMinesweeper() {
     minesweeperCreateBtn.disabled = true;
     minesweeperCreateBtn.textContent = "Creando...";
     resetGameListeners();
@@ -148,15 +147,14 @@ async function crearPartidaTicTacToe() { // Cambiamos el nombre a Buscaminas
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
     
-    // Generar el tablero
     const initialState = generateMinesweeperBoard(GRID_SIZE, NUM_MINES);
 
     set(newGameRef, {
         gameType: 'minesweeper',
         status: 'waiting',
-        playerX: P_CREATOR, // Player 1 (Creador)
-        playerO: null,
-        ...initialState // Expande el tablero, vista y puntuaciones
+        player1: P_CREATOR, // Player 1 (Creador)
+        player2: null,
+        ...initialState 
     });
 
     playerRole = P_CREATOR;
@@ -178,7 +176,7 @@ async function crearPartidaTicTacToe() { // Cambiamos el nombre a Buscaminas
     });
 }
 
-function unirseAPartidaTicTacToe() { // Cambiamos el nombre a Buscaminas
+function unirseAPartidaMinesweeper() {
     const code = minesweeperJoinInput.value.trim().toUpperCase();
     
     if (code.length !== 5) {
@@ -199,7 +197,7 @@ function unirseAPartidaTicTacToe() { // Cambiamos el nombre a Buscaminas
             currentGameID = code;
             playerRole = P_JOINER; 
             
-            update(gameRef, { status: 'active', playerO: P_JOINER });
+            update(gameRef, { status: 'active', player2: P_JOINER });
             
             iniciarJuegoMinesweeper(P_JOINER);
         }
@@ -235,9 +233,20 @@ function sincronizarMinesweeper() {
         renderMinesweeperGrid(data.view, data.board);
         updateScoreboard(data);
 
-        // Lógica de fin de juego (si todas las minas han sido encontradas)
-        if (data.remainingMines === 0) {
-            endGameMinesweeper(`Juego Terminado! P1: ${data.scoreP1}, P2: ${data.scoreP2}`);
+        // Lógica de fin de juego (CORREGIDA)
+        if (data.winner) {
+            const opponentRole = data.winner === P_CREATOR ? P_JOINER : P_CREATOR;
+            if (data.winner === playerRole) {
+                minesweeperStatus.textContent = "¡Has Ganado! (Tu oponente tocó una mina)";
+            } else {
+                minesweeperStatus.textContent = `¡Has Perdido! (Ganó ${data.winner} porque tocaste una mina)`;
+            }
+            endGameMinesweeper();
+            
+        } else if (data.remainingMines === 0) {
+            // Si el juego termina porque todas las minas fueron encontradas (sin perder)
+            const finalMessage = data.scoreP1 > data.scoreP2 ? `P1 gana con ${data.scoreP1} puntos.` : (data.scoreP2 > data.scoreP1 ? `P2 gana con ${data.scoreP2} puntos.` : "¡Empate!");
+            endGameMinesweeper(finalMessage);
         }
     });
 }
@@ -269,7 +278,10 @@ function renderMinesweeperGrid(view, board) {
                 
                 if (cellValue === -1) {
                     cell.textContent = '💣';
-                    cell.classList.add(cellData.player); // Mostrar qué jugador reveló la mina
+                    // Si el juego terminó, marcamos la mina que causó la derrota
+                    if (cellData.player) {
+                         cell.classList.add(cellData.player); 
+                    }
                 } else if (cellValue > 0) {
                     cell.textContent = cellValue;
                     cell.classList.add(`num-${cellValue}`);
@@ -295,36 +307,33 @@ function handleMinesweeperClick(e) {
         revealCell(r, c);
     }
     // 2. Manejar Clic Derecho (Marcar/Bandera)
-    // Nota: Necesitarás añadir un event listener de 'contextmenu' para esto, 
-    // y prevenir el menú contextual por defecto.
+    // NOTA: La lógica de bandera se maneja en 'contextmenu'
 }
 
-// Lógica para enviar la acción a Firebase (Simplificado)
+// Lógica CRÍTICA de Buscaminas (CORREGIDA)
 function revealCell(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
         
-        if (data.view[r][c].revealed || data.view[r][c].flagged) return;
+        if (data.view[r][c].revealed || data.view[r][c].flagged || data.winner) return;
 
         let newView = data.view.map(row => row.map(cell => ({ ...cell })));
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
         let newRemainingMines = data.remainingMines;
-        
-        newView[r][c].revealed = true;
-        newView[r][c].player = playerRole;
+        let gameResult = data.winner; 
 
-        // Lógica de puntuación
+        newView[r][c].revealed = true;
+        newView[r][c].player = playerRole; // Marcar qué jugador hizo el movimiento
+
+        // Lógica de derrota y puntuación
         if (data.board[r][c] === -1) {
-            // ¡Mina! Quita puntos al oponente y resta una mina restante.
-            if (playerRole === P_CREATOR) {
-                newScoreP2 = Math.max(0, newScoreP2 - 5);
-            } else {
-                newScoreP1 = Math.max(0, newScoreP1 - 5);
-            }
-            newRemainingMines--;
-            showToast(`${playerRole} encontró una mina. -5 puntos al oponente.`, 'success');
+            // ¡Mina! El jugador activo PIERDE, el oponente GANA.
+            const winningPlayer = playerRole === P_CREATOR ? P_JOINER : P_CREATOR;
+            gameResult = winningPlayer; 
+
+            showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
         } else if (data.board[r][c] > 0) {
             // Número: Añade puntos
@@ -334,14 +343,15 @@ function revealCell(r, c) {
                 newScoreP2 += data.board[r][c];
             }
         } else {
-            // Celda vacía (0): Implementar lógica de revelación en cascada AQUÍ (es complejo)
+            // Celda vacía (0): Implementar lógica de revelación en cascada (pendiente)
         }
 
         update(gameRef, {
             view: newView,
             scoreP1: newScoreP1,
             scoreP2: newScoreP2,
-            remainingMines: newRemainingMines
+            remainingMines: newRemainingMines,
+            winner: gameResult // Se actualizará si hay derrota
         });
     });
 }
@@ -356,25 +366,14 @@ function endGameMinesweeper(message) {
 
 // --- 7. Event Listeners y Utilidades de UI (Minesweeper) ---
 
-minesweeperCreateBtn.addEventListener('click', crearPartidaTicTacToe); // Usar función de creación
-minesweeperJoinBtn.addEventListener('click', unirseAPartidaTicTacToe); // Usar función de unión
+minesweeperCreateBtn.addEventListener('click', crearPartidaMinesweeper); 
+minesweeperJoinBtn.addEventListener('click', unirseAPartidaMinesweeper); 
 minesweeperGrid.addEventListener('click', handleMinesweeperClick); 
 minesweeperGrid.addEventListener('contextmenu', (e) => {
     e.preventDefault(); // Prevenir menú contextual
-    const cell = e.target.closest('.mine-cell');
-    if (cell) {
-        // Lógica de bandera (Flagging)
-        // Necesitarás implementar la función toggleFlag(r, c)
-    }
+    // Implementar lógica de Bandera aquí si es necesario
 });
 
-// Implementación de utilidades (copiadas de otros scripts)
-function showToast(message, type = 'error') {
-    // ... (Implementación de showToast) ...
-}
-function applyAnimation(element, animationClass) {
-    // ... (Implementación de applyAnimation) ...
-}
 
 // Lógica de inicio de Dark Mode y activación de menú (Copiada)
 function setActiveMenu() {
@@ -390,13 +389,32 @@ function setActiveMenu() {
     });
 }
 
+function showToast(message, type = 'error') {
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    if (type === 'success') {
+        toast.classList.add('success');
+    }
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function applyAnimation(element, animationClass) {
+    element.classList.add(animationClass);
+    element.addEventListener('animationend', () => {
+        element.classList.remove(animationClass);
+    }, { once: true });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setActiveMenu(); 
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
     }
-    // Lógica para hash URL
     if (window.location.hash) {
         const gameCodeFromURL = window.location.hash.substring(1).toUpperCase();
         minesweeperJoinInput.value = gameCodeFromURL;
