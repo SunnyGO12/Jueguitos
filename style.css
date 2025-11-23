@@ -35,6 +35,9 @@
     --color-absent-light: #787c7e;
     --color-absent-dark: #3a3a3c;
     --color-white: #ffffff;
+    
+    /* CORRECCIÓN: Color de la celda revelada en modo oscuro para contraste */
+    --color-revealed-dark: #2c2c2e; 
 
     /* Colores UI */
     --color-btn: var(--color-correct); /* Botón principal es verde */
@@ -80,7 +83,7 @@ body {
 
 .dashboard-menu {
     list-style: none;
-    display: block; /* Aseguramos que se muestre verticalmente */
+    display: block; 
 }
 
 .dashboard-menu li a {
@@ -533,15 +536,17 @@ body.dark-mode .tictactoe-cell:hover {
 
 #minesweeper-grid {
     display: grid;
-    /* CORRECCIÓN: Usamos max-width y aspect-ratio para escalabilidad y forma cuadrada */
     max-width: 400px; 
     margin: 20px auto;
-    border: 3px solid var(--color-absent-light);
+    border: 3px solid var(--color-border-light); /* Borde claro en ambos modos */
     aspect-ratio: 1 / 1; 
 }
 
+body.dark-mode #minesweeper-grid {
+    border-color: var(--color-text-dark); /* Borde blanco/claro en modo oscuro */
+}
+
 .mine-cell {
-    /* CORRECCIÓN: Mantenemos un min-size y dejamos que el grid se encargue del layout */
     min-width: 30px; 
     min-height: 30px;
     border: 1px solid var(--color-border-light);
@@ -553,8 +558,7 @@ body.dark-mode .tictactoe-cell:hover {
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.1s;
-    user-select: none; /* Evita seleccionar el texto/emojis */
-    
+    user-select: none;
     color: var(--color-white); 
 }
 
@@ -573,8 +577,11 @@ body.dark-mode .mine-cell {
     border: 1px solid var(--color-border-light);
     cursor: default;
 }
+/* CORRECCIÓN: Fondo de celda revelada en modo oscuro para mayor contraste */
 body.dark-mode .mine-cell.revealed {
-    background-color: var(--color-container-bg-dark); 
+    background-color: var(--color-revealed-dark); 
+    color: var(--color-text-dark);
+    border-color: var(--color-border-dark);
 }
 
 /* Estilos de Puntuación/Mina */
