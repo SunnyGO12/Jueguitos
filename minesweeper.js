@@ -1,4 +1,4 @@
-// --- 1. Configuración de Firebase (Igual que en otros scripts) ---
+// --- 1. Configuración de Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
@@ -41,113 +41,103 @@ let isGameActive = false;
 let gameListener = null; 
 let statusListener = null; 
 
-// Configuración del tablero
+// Configuraciones del Juego
 const GRID_SIZE = 8;
 const NUM_MINES = 10;
 const P_CREATOR = 'P1';
 const P_JOINER = 'P2';
 
+// Estado local del tablero (para la lógica de revelación)
+let localBoard = null; // Matriz 2D real (minas y números)
+let localRevealedState = {}; // Objeto de celdas clave (e.g., '0_0': 'P1_R')
 
-// --- 4. Funciones de Juego (Lógica de Buscaminas - ADAPTADA A 1D) ---
 
-// Función auxiliar para obtener el índice 1D a partir de 2D
-const getIndex1D = (r, c) => r * GRID_SIZE + c;
+// --- 4. Funciones de Lógica de Juego (ADAPTADAS A 2D LOCAL) ---
 
+// Función auxiliar para obtener la clave de Firebase
+const getCellKey = (r, c) => `${r}_${c}`;
 
 /**
- * Genera el tablero de minas y números en formato 1D List (Array de 64 elementos).
+ * Genera el tablero de minas y números (2D Array)
  */
-function generateMinesweeperBoard(size, mines, startR, startC) {
-    let board2D = Array(size).fill(0).map(() => Array(size).fill(0));
+function generateBoardData(size, mines, startR, startC) {
+    let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
 
-    // Colocar Minas (-1), evitando el área inicial (3x3)
     while (placedMines < mines) {
         let row = Math.floor(Math.random() * size);
         let col = Math.floor(Math.random() * size);
         
-        // Evitar la celda de inicio y sus vecinos inmediatos
         if (Math.abs(row - startR) <= 1 && Math.abs(col - startC) <= 1) {
             continue;
         }
         
-        if (board2D[row][col] !== -1) {
-            board2D[row][col] = -1;
+        if (board[row][col] !== -1) {
+            board[row][col] = -1;
             placedMines++;
         }
     }
 
-    // Calcular números adyacentes
     for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
-            if (board2D[r][c] === -1) continue;
-
+            if (board[r][c] === -1) continue;
             let count = 0;
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
                     const nr = r + i;
                     const nc = c + j;
-
-                    if (nr >= 0 && nr < size && nc >= 0 && nc < size && board2D[nr][nc] === -1) {
+                    if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr][nc] === -1) {
                         count++;
                     }
                 }
             }
-            board2D[r][c] = count;
+            board[r][c] = count;
         }
     }
-    
-    // Convertir a lista 1D para Firebase
-    let boardList = [];
-    let viewList = [];
-
-    for (let r = 0; r < size; r++) {
-        for (let c = 0; c < size; c++) {
-            boardList.push(board2D[r][c]);
-            viewList.push({
-                revealed: false,
-                flagged: false,
-                player: null
-            });
-        }
-    }
-
-    return { board: boardList, view: viewList, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
+    return board;
 }
 
 /**
- * Revelación en Cascada (Adaptada a 1D)
+ * Revelación en Cascada (Trabaja sobre el estado local: localBoard y localRevealedState)
  */
-function checkAndRevealAdjacent(r, c, board, view, player) {
-    const i = getIndex1D(r, c);
-
-    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[i].revealed) {
-        return;
-    }
-    if (board[i] === -1 || view[i].flagged) {
-        return;
-    }
-
-    view[i].revealed = true;
-    view[i].player = player;
+function checkAndRevealAdjacent(r, c, player) {
+    const key = getCellKey(r, c);
     
-    if (board[i] > 0) {
+    // Si fuera de límites, revelada, o marcada con bandera, salimos.
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || localRevealedState[key]?.includes('_R') || localRevealedState[key]?.includes('_F')) {
+        return;
+    }
+    // Si es una mina, salimos (la mina se maneja en revealCell)
+    if (localBoard[r][c] === -1) {
         return;
     }
 
+    // Revelar la celda actual
+    localRevealedState[key] = `${player}_R`;
+    let points = 1; // 1 punto por celda revelada
+    
+    // Si es un número (> 0), paramos la cascada y sumamos los puntos del número.
+    if (localBoard[r][c] > 0) {
+        return points;
+    }
+
+    // Si es 0, llamamos recursivamente
     for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
             if (dr === 0 && dc === 0) continue; 
             
-            checkAndRevealAdjacent(r + dr, c + dc, board, view, player);
+            // Recorre y acumula los puntos de las revelaciones en cascada
+            checkAndRevealAdjacent(r + dr, c + dc, player);
         }
     }
+    return points;
 }
 
 
 // --- 5. Funciones Principales (Firebase) ---
 
 function generarCodigo(longitud) {
+    // ... (función generarCodigo se mantiene)
     let codigo = '';
     const CARACTERES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     for (let i = 0; i < longitud; i++) {
@@ -157,6 +147,7 @@ function generarCodigo(longitud) {
 }
 
 async function generarCodigoUnico() {
+    // ... (función generarCodigoUnico se mantiene)
     let codigoUnico = '';
     let existe = true;
     while (existe) {
@@ -169,14 +160,8 @@ async function generarCodigoUnico() {
 }
 
 function resetGameListeners() {
-    if (gameListener) {
-        gameListener();
-        gameListener = null;
-    }
-    if (statusListener) {
-        statusListener();
-        statusListener = null;
-    }
+    if (gameListener) { gameListener(); gameListener = null; }
+    if (statusListener) { statusListener(); statusListener = null; }
 }
 
 function handleResetClick() {
@@ -192,13 +177,14 @@ async function crearPartidaMinesweeper() {
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
     
+    // Al inicio, el tablero es null, el estado revelado es vacío.
     set(newGameRef, {
         gameType: 'minesweeper',
         status: 'waiting',
         player1: P_CREATOR, 
         player2: null,
-        board: null, 
-        view: null,  
+        boardConfig: null, 
+        revealed: {}, // Objeto vacío, no array problemático
         scoreP1: 0, scoreP2: 0, totalMines: NUM_MINES, remainingMines: NUM_MINES, winner: null
     });
 
@@ -208,7 +194,6 @@ async function crearPartidaMinesweeper() {
     minesweeperCreateBtn.textContent = "Crear Partida";
     
     document.querySelectorAll('#minesweeper-lobby-container .lobby-section').forEach(el => el.classList.add('hidden'));
-    
     minesweeperCodeDisplay.classList.remove('hidden');
     document.querySelector('.minesweeper-code').textContent = currentGameID;
     minesweeperStatus.textContent = "Esperando a que el jugador 2 se una...";
@@ -223,7 +208,6 @@ async function crearPartidaMinesweeper() {
 
 function unirseAPartidaMinesweeper() {
     const code = minesweeperJoinInput.value.trim().toUpperCase();
-    
     if (code.length !== 5) {
         showToast("El código debe tener 5 letras.");
         applyAnimation(minesweeperJoinInput, 'shake');
@@ -231,7 +215,6 @@ function unirseAPartidaMinesweeper() {
     }
 
     const gameRef = ref(db, `games/${code}`);
-
     get(gameRef).then((snapshot) => {
         const data = snapshot.val();
         if (!snapshot.exists() || data.gameType !== 'minesweeper') {
@@ -241,9 +224,7 @@ function unirseAPartidaMinesweeper() {
         } else {
             currentGameID = code;
             playerRole = P_JOINER; 
-            
             update(gameRef, { status: 'active', player2: P_JOINER });
-            
             iniciarJuegoMinesweeper(P_JOINER);
         }
     });
@@ -257,13 +238,9 @@ function iniciarJuegoMinesweeper(role) {
     minesweeperGameContainer.classList.remove('hidden');
     isGameActive = true; 
 
-    if (statusListener) {
-        statusListener(); 
-        statusListener = null;
-    }
+    if (statusListener) { statusListener(); statusListener = null; }
     
     initializeGridDisplay(); 
-
     sincronizarMinesweeper();
 }
 
@@ -274,31 +251,27 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        // CRÍTICO: Verificar si el tablero y la vista existen antes de intentar renderizar
-        if (data.board === null || data.view === null || data.board === undefined || data.view === undefined) { 
+        // Cargar el estado local del tablero (o nulo)
+        localRevealedState = data.revealed || {};
+
+        if (data.boardConfig) {
+            // El tablero existe: Deserializar y actualizar estado local
+            localBoard = JSON.parse(data.boardConfig);
+            minesweeperStatus.textContent = "¡A jugar! Clica para revelar celdas.";
+        } else {
+            // El tablero NO existe: Esperar el primer clic
+            localBoard = null;
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
-            return;
         }
 
-        renderMinesweeperGrid(data.view, data.board);
+        renderMinesweeperGrid(localRevealedState, localBoard);
         updateScoreboard(data);
 
-        // Lógica de fin de juego
+        // Lógica de fin de juego (Simplificada)
         if (data.winner) {
             const opponentRole = data.winner === P_CREATOR ? P_JOINER : P_CREATOR;
-            if (data.winner === playerRole) {
-                minesweeperStatus.textContent = "¡Has Ganado! (Tu oponente tocó una mina)";
-            } else {
-                minesweeperStatus.textContent = `¡Has Perdido! (Ganó ${data.winner} porque tocaste una mina)`;
-            }
+            minesweeperStatus.textContent = data.winner === playerRole ? "¡Has Ganado!" : `¡Has Perdido! (Ganó ${data.winner})`;
             endGameMinesweeper();
-            
-        } else if (data.remainingMines === 0) {
-            const finalMessage = data.scoreP1 > data.scoreP2 ? `P1 gana con ${data.scoreP1} puntos.` : (data.scoreP2 > data.scoreP1 ? `P2 gana con ${data.scoreP2} puntos.` : "¡Empate!");
-            endGameMinesweeper(finalMessage);
-        } else {
-            // El juego está activo y esperando clics
-            minesweeperStatus.textContent = "¡A jugar! Clica para revelar celdas.";
         }
     });
 }
@@ -329,50 +302,36 @@ function initializeGridDisplay() {
 }
 
 
-function renderMinesweeperGrid(view, board) {
-    minesweeperGrid.innerHTML = ''; 
-    
-    // Forzamos la conversión de los datos dispersos de Firebase a arrays densos.
-    const viewList = Array.isArray(view) ? view : Object.values(view || {});
-    const boardList = Array.isArray(board) ? board : Object.values(board || {});
-
+function renderMinesweeperGrid(revealedState, board) {
+    // Si el tablero aún no está generado, solo mostramos las celdas vacías (iniciales)
+    const isBoardGenerated = board !== null;
 
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
-            const i = getIndex1D(r, c); // Índice 1D
+            const key = getCellKey(r, c);
+            const cell = minesweeperGrid.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+            if (!cell) continue;
+            
+            const state = revealedState[key];
+            const cellValue = isBoardGenerated ? board[r][c] : 0;
+            
+            cell.className = 'mine-cell'; // Reset de clases
+            cell.textContent = ''; // Reset de contenido
 
-            // Verificación de seguridad usando la longitud esperada
-            if (i >= viewList.length || i >= boardList.length) continue; 
-            
-            const cellData = viewList[i];
-            const cellValue = boardList[i];
-            
-            // Si por alguna razón la celda es null o undefined (aunque ya verificamos arriba), la omitimos
-            if (!cellData || (!cellValue && cellValue !== 0 && cellValue !== -1)) continue; 
-
-            const cell = document.createElement('div');
-            
-            cell.classList.add('mine-cell');
-            cell.dataset.row = r;
-            cell.dataset.col = c;
-            
-            if (cellData.revealed) {
+            if (state?.includes('_R')) {
                 cell.classList.add('revealed');
-                
+                cell.classList.add(state.slice(0, 2)); // P1 o P2
+
                 if (cellValue === -1) {
                     cell.textContent = '💣';
-                    if (cellData.player) {
-                         cell.classList.add(cellData.player); 
-                    }
                 } else if (cellValue > 0) {
                     cell.textContent = cellValue;
                     cell.classList.add(`num-${cellValue}`);
                 }
-            } else if (cellData.flagged) {
+            } else if (state?.includes('_F')) {
                 cell.textContent = '🚩';
+                cell.classList.add('flagged');
             }
-            
-            minesweeperGrid.appendChild(cell);
         }
     }
 }
@@ -391,42 +350,51 @@ function handleMinesweeperClick(e) {
 }
 
 function handleFlag(r, c) {
+    if (!localBoard) {
+        showToast("El juego aún no ha comenzado con el primer clic.", 'error');
+        return;
+    }
+    
+    const key = getCellKey(r, c);
+    const isRevealed = localRevealedState[key]?.includes('_R');
+
+    if (isRevealed) return; 
+
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
-        if (data.winner || data.board === null) return;
-        
-        const i = getIndex1D(r, c);
+        if (data.winner) return;
 
-        // Clonación profunda de view (array 1D es mucho más fácil)
-        let newView = data.view.map(cell => ({ ...cell }));
+        let newRevealed = { ...data.revealed };
         
-        if (newView[i].revealed) return; // No se puede poner bandera en celda revelada
-        
-        // Toggle de la bandera
-        newView[i].flagged = !newView[i].flagged;
+        if (newRevealed[key]?.includes('_F')) {
+            // Quitar bandera
+            delete newRevealed[key];
+        } else {
+            // Poner bandera
+            newRevealed[key] = `${playerRole}_F`;
+        }
 
         update(gameRef, {
-            view: newView
+            revealed: newRevealed
         });
     });
 }
 
 function handleFirstClick(r, c) {
-    // 1. Generar tablero de forma segura
-    const { board, view, scoreP1, scoreP2, totalMines, remainingMines } = generateMinesweeperBoard(GRID_SIZE, NUM_MINES, r, c);
-    
-    // 2. Revelar la primera celda (iniciando cascada)
-    const initialRevealCount = view.filter(cell => cell.revealed).length;
-    checkAndRevealAdjacent(r, c, board, view, playerRole);
-    const finalRevealCount = view.filter(cell => cell.revealed).length;
-    
-    const pointsEarned = finalRevealCount - initialRevealCount;
+    // 1. Generar tablero de forma segura (2D Array local)
+    localBoard = generateBoardData(GRID_SIZE, NUM_MINES, r, c);
 
-    // 3. Guardar el nuevo tablero inicial y el estado de la revelación en Firebase
+    // 2. Aplicar la revelación inicial en cascada
+    checkAndRevealAdjacent(r, c, playerRole); // Usa localBoard y localRevealedState
+
+    // 3. Calcular puntos iniciales
+    const pointsEarned = Object.keys(localRevealedState).length;
+
+    // 4. Guardar el estado inicial y la configuración del tablero en Firebase
     update(ref(db, `games/${currentGameID}`), {
-        board: board,
-        view: view,
+        boardConfig: JSON.stringify(localBoard), // Guardar 2D como string JSON
+        revealed: localRevealedState, // Guardar objeto clave-valor 1D
         scoreP1: playerRole === P_CREATOR ? pointsEarned : 0,
         scoreP2: playerRole === P_JOINER ? pointsEarned : 0
     });
@@ -438,78 +406,72 @@ function revealCell(r, c) {
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
         
+        const key = getCellKey(r, c);
+        
         // CRÍTICO: Si el tablero es null, este es el primer clic.
-        if (data.board === null) {
-            // Permitimos el primer clic solo si el juego está activo (ambos jugadores están dentro)
+        if (!data.boardConfig) {
             if (!isGameActive) {
-                showToast("Espera a que se una el segundo jugador para iniciar.");
+                showToast("Espera a que se una el segundo jugador para iniciar.", 'error');
                 return;
             }
             handleFirstClick(r, c);
             return;
         }
-
-        const i = getIndex1D(r, c);
         
+        // Si el tablero ya existe, debemos haberlo cargado localmente en sincronizarMinesweeper
+        if (!localBoard) return; 
+
         if (data.winner) return; 
-        if (data.view[i].revealed || data.view[i].flagged) return;
+        if (localRevealedState[key]?.includes('_R') || localRevealedState[key]?.includes('_F')) return;
 
-        // Clonación de los arrays 1D (mucho más fácil y seguro)
-        let newBoard = [...data.board]; 
-        let newView = data.view.map(cell => ({ ...cell }));
-
+        // Clonar el estado revelado de Firebase
+        let newRevealed = { ...localRevealedState };
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
-        let newRemainingMines = data.remainingMines;
         let gameResult = data.winner; 
+        let pointsEarned = 0;
 
         // Lógica de derrota y puntuación
-        if (newBoard[i] === -1) {
+        if (localBoard[r][c] === -1) {
             // ¡Mina!
             const winningPlayer = playerRole === P_CREATOR ? P_JOINER : P_CREATOR;
             gameResult = winningPlayer; 
 
-            newView[i].revealed = true;
-            newView[i].player = playerRole; 
+            newRevealed[key] = `${playerRole}_R`; // Marcar la mina que se encontró
 
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
-        } else if (newBoard[i] > 0) {
+        } else if (localBoard[r][c] > 0) {
             // Número
-            newView[i].revealed = true;
-            newView[i].player = playerRole;
+            newRevealed[key] = `${playerRole}_R`;
+            pointsEarned = localBoard[r][c];
 
-            if (playerRole === P_CREATOR) {
-                newScoreP1 += newBoard[i];
-            } else {
-                newScoreP2 += newBoard[i];
-            }
         } else {
             // Celda vacía (0)
-            const initialRevealCount = newView.filter(c => c.revealed).length;
+            const initialRevealCount = Object.keys(newRevealed).length;
             
-            // Llama a la función recursiva para revelar el área vacía (usa arrays 1D)
-            checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
-
-            const finalRevealCount = newView.filter(c => c.revealed).length;
-            const pointsEarned = finalRevealCount - initialRevealCount;
-
-            if (playerRole === P_CREATOR) {
-                newScoreP1 += pointsEarned;
-            } else {
-                newScoreP2 += pointsEarned;
-            }
+            // Usamos la función recursiva sobre el estado local clonado (newRevealed)
+            localRevealedState = newRevealed; // Asignamos temporalmente para que la recursión funcione
+            checkAndRevealAdjacent(r, c, playerRole);
+            newRevealed = localRevealedState; // Recuperamos el estado modificado
+            
+            const finalRevealCount = Object.keys(newRevealed).length;
+            pointsEarned = finalRevealCount - initialRevealCount;
+            localRevealedState = data.revealed || {}; // Reset localRevealedState 
         }
         
-        let flaggedCount = newView.filter(c => c.flagged).length;
-        newRemainingMines = NUM_MINES - flaggedCount;
+        // Aplicar puntuación
+        if (playerRole === P_CREATOR) {
+            newScoreP1 += pointsEarned;
+        } else {
+            newScoreP2 += pointsEarned;
+        }
 
-
+        // 4. Actualizar Firebase
         update(gameRef, {
-            view: newView,
+            revealed: newRevealed,
             scoreP1: newScoreP1,
             scoreP2: newScoreP2,
-            remainingMines: newRemainingMines,
             winner: gameResult 
         });
     });
