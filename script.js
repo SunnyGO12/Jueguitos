@@ -45,7 +45,7 @@ const secretWordDisplay = document.getElementById('secret-word-display');
 const retadorInfo = document.getElementById('retador-info');
 const keyboardContainer = document.getElementById('keyboard-container');
 
-// Wordle Lobby Sections (NUEVOS DOM Elements para control fino)
+// Wordle Lobby Sections
 const createSectionWordle = document.getElementById('create-section');
 const joinSectionWordle = document.getElementById('join-section');
 
@@ -143,7 +143,7 @@ function handleMenuClick(event, gameIdOverride) {
         el.classList.remove('active-game');
     });
 
-    // 3. Mostrar solo el contenedor del juego activo y su lobby inicial
+    // 3. Mostrar solo el contenedor del juego activo
     const activeGameArea = document.getElementById(`${currentActiveGame}-game-area`);
     if (activeGameArea) {
         activeGameArea.classList.remove('hidden');
@@ -158,7 +158,7 @@ function handleMenuClick(event, gameIdOverride) {
         }
     });
     
-    // 5. **CORRECCIÓN CLAVE:** Resetear la UI específica al estado de lobby
+    // 5. **CORRECCIÓN CLAVE:** Resetear la UI del juego activo al estado de lobby
     if (currentActiveGame === 'wordle') {
         // Mostrar lobby, ocultar juego, mostrar secciones de crear/unir
         lobbyContainer.classList.remove('hidden');
@@ -166,15 +166,16 @@ function handleMenuClick(event, gameIdOverride) {
         createSectionWordle.classList.remove('hidden');
         joinSectionWordle.classList.remove('hidden');
         gameCodeDisplay.classList.add('hidden');
+        
     } else if (currentActiveGame === 'tictactoe') {
         // Mostrar lobby, ocultar juego, mostrar botones iniciales
         tictactoeLobbyContainer.classList.remove('hidden');
         tictactoeGameContainer.classList.add('hidden');
         tictactoeCodeDisplay.classList.add('hidden'); 
+        
         // Asegurar que las secciones con los botones de Crear/Unir estén visibles
         document.querySelectorAll('#tictactoe-lobby-container .lobby-section').forEach(el => el.classList.remove('hidden'));
     }
-    // Para Buscaminas y Ajedrez, simplemente el área de juego ya tiene el mensaje "Próximamente"
 }
 
 function resetGameListeners() {
@@ -582,7 +583,7 @@ async function crearPartidaTicTacToe() {
     tictactoeCreateBtn.disabled = false;
     tictactoeCreateBtn.textContent = "Crear Partida de X";
     
-    // **CORRECCIÓN DE UI:** Ocultar secciones de Crear/Unir
+    // Ocultar secciones de Crear/Unir
     document.querySelectorAll('#tictactoe-lobby-container .lobby-section').forEach(el => el.classList.add('hidden'));
     
     tictactoeCodeDisplay.classList.remove('hidden');
