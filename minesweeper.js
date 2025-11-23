@@ -50,10 +50,6 @@ const P_JOINER = 'P2';
 
 // --- 4. Funciones de Juego (Lógica de Buscaminas) ---
 
-/**
- * Genera el tablero de minas y números, GARANTIZANDO que (startR, startC) no tenga una mina
- * y tenga valor 0 (o lo más cercano a 0 posible).
- */
 function generateMinesweeperBoard(size, mines, startR, startC) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
@@ -105,8 +101,7 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
 }
 
 /**
- * REGLA CRÍTICA DE BUSCAMINAS: Revelación en Cascada
- * Modifica la matriz 'view' en su lugar.
+ * Revelación en Cascada
  */
 function checkAndRevealAdjacent(r, c, board, view, player) {
     if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[r][c].revealed) {
@@ -180,14 +175,13 @@ async function crearPartidaMinesweeper() {
     currentGameID = await generarCodigoUnico();
     const newGameRef = ref(db, `games/${currentGameID}`);
     
-    // NO GENERAMOS EL TABLERO AQUÍ. Solo lo inicializamos a null.
     set(newGameRef, {
         gameType: 'minesweeper',
         status: 'waiting',
         player1: P_CREATOR, 
         player2: null,
         board: null, // CRÍTICO: El tablero es null al inicio
-        view: null,  // CRÍTICO: La vista es null al inicio
+        view: null,  
         scoreP1: 0, scoreP2: 0, totalMines: NUM_MINES, remainingMines: NUM_MINES, winner: null
     });
 
@@ -244,14 +238,13 @@ function iniciarJuegoMinesweeper(role) {
     
     minesweeperLobbyContainer.classList.add('hidden');
     minesweeperGameContainer.classList.remove('hidden');
-    isGameActive = true;
+    isGameActive = true; // El juego se marca como activo AQUI
 
     if (statusListener) {
         statusListener(); 
         statusListener = null;
     }
     
-    // Inicializar la cuadrícula visual para ambos
     initializeGridDisplay(); 
 
     sincronizarMinesweeper();
@@ -264,7 +257,7 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        // Si el tablero no se ha generado, mostramos el mensaje de "Esperando el primer clic"
+        // Si el tablero no se ha generado, solo actualizamos el estado y esperamos.
         if (data.board === null) {
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
             return;
@@ -287,6 +280,7 @@ function sincronizarMinesweeper() {
             const finalMessage = data.scoreP1 > data.scoreP2 ? `P1 gana con ${data.scoreP1} puntos.` : (data.scoreP2 > data.scoreP1 ? `P2 gana con ${data.scoreP2} puntos.` : "¡Empate!");
             endGameMinesweeper(finalMessage);
         } else {
+            // El juego está activo y esperando clics
             minesweeperStatus.textContent = "¡A jugar! Clica para revelar celdas.";
         }
     });
@@ -354,24 +348,22 @@ function renderMinesweeperGrid(view, board) {
 
 function handleMinesweeperClick(e) {
     const cell = e.target.closest('.mine-cell');
-    if (!cell || !isGameActive) return;
+    if (!cell || !isGameActive) return; // Si isGameActive es falso (lobby), salimos
 
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
     
-    // Clic izquierdo (Revelar)
+    // Clic izquierdo
     if (e.button === 0) {
         revealCell(r, c);
     } 
-    // Clic derecho (Bandera)
-    // NOTE: El manejo de clic derecho se hace en el listener de 'contextmenu'
 }
 
 function handleFlag(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
-        if (data.winner || data.view[r][c].revealed) return;
+        if (data.winner || data.view[r][c].revealed || data.board === null) return; // Bloquea si no hay tablero
 
         let newView = data.view.map(row => row.map(cell => ({ ...cell })));
         
@@ -384,13 +376,11 @@ function handleFlag(r, c) {
     });
 }
 
-// NUEVA FUNCIÓN: Procesa el primer clic para generar el tablero y luego revela
 function handleFirstClick(r, c) {
     // 1. Generar tablero de forma segura
     const { board, view, scoreP1, scoreP2, totalMines, remainingMines } = generateMinesweeperBoard(GRID_SIZE, NUM_MINES, r, c);
     
     // 2. Revelar la primera celda (iniciando cascada)
-    // Usamos el estado del nuevo tablero generado
     const initialRevealCount = view.flat().filter(cell => cell.revealed).length;
     checkAndRevealAdjacent(r, c, board, view, playerRole);
     const finalRevealCount = view.flat().filter(cell => cell.revealed).length;
@@ -432,7 +422,7 @@ function revealCell(r, c) {
 
         // Lógica de derrota y puntuación
         if (newBoard[r][c] === -1) {
-            // ¡Mina! El jugador activo PIERDE, el oponente GANA.
+            // ¡Mina!
             const winningPlayer = playerRole === P_CREATOR ? P_JOINER : P_CREATOR;
             gameResult = winningPlayer; 
 
@@ -442,7 +432,7 @@ function revealCell(r, c) {
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
         } else if (newBoard[r][c] > 0) {
-            // Número: Revela la celda y suma puntos.
+            // Número
             newView[r][c].revealed = true;
             newView[r][c].player = playerRole;
 
@@ -452,7 +442,7 @@ function revealCell(r, c) {
                 newScoreP2 += newBoard[r][c];
             }
         } else {
-            // Celda vacía (0): Inicia la cascada y suma 1 punto por cada celda revelada.
+            // Celda vacía (0)
             const initialRevealCount = newView.flat().filter(c => c.revealed).length;
             
             checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
@@ -467,7 +457,6 @@ function revealCell(r, c) {
             }
         }
         
-        // Contar minas restantes (simplificado, asume que las marcadas con bandera son correctas)
         let flaggedCount = newView.flat().filter(c => c.flagged).length;
         newRemainingMines = NUM_MINES - flaggedCount;
 
