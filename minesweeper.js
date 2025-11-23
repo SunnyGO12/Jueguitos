@@ -66,6 +66,7 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
         let row = Math.floor(Math.random() * size);
         let col = Math.floor(Math.random() * size);
         
+        // Evitar la celda de inicio y sus vecinos inmediatos
         if (Math.abs(row - startR) <= 1 && Math.abs(col - startC) <= 1) {
             continue;
         }
@@ -331,7 +332,7 @@ function initializeGridDisplay() {
 function renderMinesweeperGrid(view, board) {
     minesweeperGrid.innerHTML = ''; 
     
-    // Si data.view es un objeto, forzamos su conversión a un array denso.
+    // Forzamos la conversión de los datos dispersos de Firebase a arrays densos.
     const viewList = Array.isArray(view) ? view : Object.values(view || {});
     const boardList = Array.isArray(board) ? board : Object.values(board || {});
 
@@ -345,6 +346,10 @@ function renderMinesweeperGrid(view, board) {
             
             const cellData = viewList[i];
             const cellValue = boardList[i];
+            
+            // Si por alguna razón la celda es null o undefined (aunque ya verificamos arriba), la omitimos
+            if (!cellData || (!cellValue && cellValue !== 0 && cellValue !== -1)) continue; 
+
             const cell = document.createElement('div');
             
             cell.classList.add('mine-cell');
@@ -446,13 +451,12 @@ function revealCell(r, c) {
 
         const i = getIndex1D(r, c);
         
+        if (data.winner) return; 
+        if (data.view[i].revealed || data.view[i].flagged) return;
+
         // Clonación de los arrays 1D (mucho más fácil y seguro)
         let newBoard = [...data.board]; 
         let newView = data.view.map(cell => ({ ...cell }));
-        
-        if (data.winner) return; 
-        if (newView[i].revealed || newView[i].flagged) return;
-
 
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
