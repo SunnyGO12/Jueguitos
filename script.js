@@ -1,7 +1,8 @@
 // --- 1. Configuración de Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+// Importamos 'get' y 'update' para la lógica de validación (Mejora 4)
 import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-// ¡NUEVO! Importamos nuestro diccionario
+// Importamos nuestro diccionario
 import { DICCIONARIO } from './diccionario.js';
 
 // Tu configuración de Firebase
@@ -20,7 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- 2. Elementos del DOM ---
+// --- 2. Elementos del DOM (Actualizado para las Mejoras) ---
 const lobbyContainer = document.getElementById('lobby-container');
 const gameContainer = document.getElementById('game-container');
 const createGameBtn = document.getElementById('create-game-btn');
@@ -39,21 +40,56 @@ const resetBtn = document.getElementById('reset-btn');
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 const toastContainer = document.getElementById('toast-container');
 
+// MEJORA 1: Elementos del retador
+const secretWordDisplay = document.getElementById('secret-word-display');
+const retadorInfo = document.getElementById('retador-info');
+// MEJORA 2: Elemento del teclado
+const keyboardContainer = document.getElementById('keyboard-container');
+
 // --- 3. Variables de Estado Global ---
 let currentGameID = null;
 let playerRole = null;
-let secretWord = null; // ¡Ahora ambos jugadores tendrán esto!
+let secretWord = null; 
 let isGameActive = false;
-let gameListener = null;
+let gameListener = null; // Listener del juego activo
+let statusListener = null; // Listener de estado del lobby (para el Retador)
 
-// --- 4. Event Listeners ---
+// --- 4. Event Listeners (Actualizado para las Mejoras) ---
 createGameBtn.addEventListener('click', crearPartida);
 joinGameBtn.addEventListener('click', unirseAPartida);
 copyLinkBtn.addEventListener('click', copiarEnlace);
 guessBtn.addEventListener('click', handleGuess);
+
+// Permitir 'Enter' en el input de adivinanza
 guessInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleGuess();
 });
+
+// MEJORA 2: Listener para el teclado en pantalla
+if (keyboardContainer) {
+    keyboardContainer.addEventListener('click', (e) => {
+        const key = e.target.getAttribute('data-key');
+        const action = e.target.getAttribute('data-action');
+        
+        if (!isGameActive || playerRole !== 'retado') return;
+
+        if (key) {
+            // Escribe la letra (convertir a mayúscula para el input, pero la lógica interna usa minúscula)
+            guessInput.value += key.toUpperCase();
+        } else if (action === 'enter') {
+            handleGuess();
+        } else if (action === 'del') {
+            // Borrar el último carácter
+            guessInput.value = guessInput.value.slice(0, -1);
+        }
+        
+        // Asegurarse de que solo haya 5 caracteres en el input
+        guessInput.value = guessInput.value.slice(0, 5);
+        
+        // Enfocar el input para una posible entrada de teclado física posterior
+        guessInput.focus(); 
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('dark-mode') === 'true') {
@@ -99,7 +135,6 @@ async function generarCodigoUnico() {
 }
 
 async function crearPartida() {
-    // ACTUALIZADO: Convertir a minúsculas para validación
     const word = secretWordInput.value.trim().toLowerCase();
 
     // Validación de 5 letras
@@ -108,14 +143,14 @@ async function crearPartida() {
         applyAnimation(secretWordInput, 'shake');
         return;
     }
-    // Validación de solo letras (ahora minúsculas)
+    // Validación de solo letras
     if (!/^[a-zñ]+$/.test(word)) {
         showToast("¡La palabra solo debe contener letras!");
         applyAnimation(secretWordInput, 'shake');
         return;
     }
     
-    // ¡NUEVA VALIDACIÓN DE DICCIONARIO!
+    // Validación de Diccionario
     if (!DICCIONARIO.has(word)) {
         showToast("La palabra no está en nuestro diccionario.");
         applyAnimation(secretWordInput, 'shake');
@@ -134,13 +169,13 @@ async function crearPartida() {
     createGameBtn.textContent = "Crear";
     
     set(newGameRef, {
-        secretWord: word, // Guardar palabra en minúsculas
+        secretWord: word, 
         status: 'waiting',
         intentos: {}
     });
 
     playerRole = 'retador';
-    secretWord = word; // ¡CORRECCIÓN DE BUG! El retador también guarda la palabra
+    secretWord = word;
     
     const gameURL = `${window.location.origin}${window.location.pathname}#${currentGameID}`;
     
@@ -150,7 +185,8 @@ async function crearPartida() {
 
     // El retador se queda en el lobby, escuchando a que alguien se una.
     const gameStatusRef = ref(db, `games/${currentGameID}/status`);
-    gameListener = onValue(gameStatusRef, (snapshot) => {
+    // Usamos statusListener para poder desconectarlo después (Mejora 5)
+    statusListener = onValue(gameStatusRef, (snapshot) => {
         if (snapshot.val() === 'active') {
             iniciarJuego('retador');
         }
@@ -158,7 +194,6 @@ async function crearPartida() {
 }
 
 function unirseAPartida() {
-    // Código de sala siempre en mayúsculas
     let code = joinCodeInput.value.trim().toUpperCase();
     
     if (code.includes('#')) {
@@ -183,7 +218,7 @@ function unirseAPartida() {
         } else {
             currentGameID = code;
             playerRole = 'retado';
-            secretWord = snapshot.val().secretWord; // Obtiene la palabra (en minúsculas)
+            secretWord = snapshot.val().secretWord; 
             
             update(gameRef, { status: 'active' });
             window.history.replaceState(null, '', window.location.pathname);
@@ -208,6 +243,7 @@ function copiarEnlace() {
     });
 }
 
+// MEJORA 1: Lógica para mostrar info al retador
 function iniciarJuego(role) {
     playerRole = role;
     
@@ -219,22 +255,70 @@ function iniciarJuego(role) {
         guessInput.disabled = true;
         guessBtn.disabled = true;
         gameMessage.textContent = "¡Se unió el retado! Esperando su intento.";
+        
+        // Mostrar la palabra secreta
+        retadorInfo.classList.remove('hidden');
+        secretWordDisplay.textContent = secretWord.toUpperCase();
+        
     } else {
         guessInput.disabled = false;
         guessBtn.disabled = false;
         guessInput.focus();
         gameMessage.textContent = "¡Tu turno! Adivina la palabra.";
+        retadorInfo.classList.add('hidden');
     }
 
-    if (gameListener) {
-        gameListener(); // Desconecta el listener de status
+    // MEJORA 5: Desconecta el listener de status del lobby si estaba activo
+    if (statusListener) {
+        statusListener(); 
+        statusListener = null; 
     }
 
     sincronizarJuego();
 }
 
+// MEJORA 3: Lógica para actualizar los colores del teclado
+function actualizarTeclado(intentos) {
+    const letterStatus = {}; // { 'A': 'correct', 'B': 'present', 'C': 'absent' }
+    
+    // Iterar sobre todos los intentos para encontrar el estado MÁS alto de cada letra
+    intentos.forEach(intento => {
+        const guess = intento.guess;
+        const states = intento.states;
+        
+        for (let i = 0; i < 5; i++) {
+            const letter = guess[i].toUpperCase();
+            const state = states[i];
+            
+            // Prioridad: 'correct' > 'present' > 'absent'
+            if (state === 'correct') {
+                letterStatus[letter] = 'correct';
+            } else if (state === 'present' && letterStatus[letter] !== 'correct') {
+                letterStatus[letter] = 'present';
+            } else if (!letterStatus[letter] && state === 'absent') { 
+                 letterStatus[letter] = 'absent';
+            }
+        }
+    });
+    
+    // Aplicar los estilos
+    document.querySelectorAll('#keyboard-container button').forEach(button => {
+        const key = button.getAttribute('data-key')?.toUpperCase();
+        if (key && letterStatus[key]) {
+            // Limpia las clases de color existentes
+            button.classList.remove('keyboard-correct', 'keyboard-present', 'keyboard-absent'); 
+            button.classList.add(`keyboard-${letterStatus[key]}`);
+        }
+    });
+}
+
 function sincronizarJuego() {
     const gameRef = ref(db, `games/${currentGameID}`);
+    
+    // Si ya existe un listener del juego, lo desconectamos para evitar duplicados (Mejora 5)
+    if (gameListener) {
+        gameListener();
+    }
     
     gameListener = onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
@@ -246,30 +330,44 @@ function sincronizarJuego() {
         }
         
         renderizarGrid(intentosArray);
+        actualizarTeclado(intentosArray); // MEJORA 3
             
         if (intentosArray.length > 0) {
             const ultimoIntento = intentosArray[intentosArray.length - 1];
             
-            // ¡CORRECCIÓN DE BUG! Ahora 'secretWord' existe para ambos roles
             if (ultimoIntento.guess === secretWord) {
-                gameMessage.textContent = "¡El retado ha ganado!";
+                gameMessage.textContent = `¡El retado ha ganado! La palabra era ${secretWord.toUpperCase()}.`;
                 if (playerRole === 'retado') {
                     triggerVictoryAnimation(intentosArray.length - 1);
                 }
                 endGame();
-            } else if (intentosArray.length === 5 && ultimoIntento.guess !== secretWord) {
-                gameMessage.textContent = "¡El retado ha perdido! Se acabaron los intentos.";
+            } else if (intentosArray.length === 5) {
+                gameMessage.textContent = `¡El retado ha perdido! La palabra era ${secretWord.toUpperCase()}.`;
                 endGame();
             }
         }
     });
 }
 
-function handleGuess() {
+// MEJORA 4: Lógica de validación de intento refactorizada
+async function handleGuess() {
     if (!isGameActive || playerRole !== 'retado') return;
     
-    // ACTUALIZADO: Convertir a minúsculas para validación
     const guess = guessInput.value.trim().toLowerCase();
+    
+    // 1. Obtener el estado actual para saber en qué fila estamos
+    const gameRef = ref(db, `games/${currentGameID}`);
+    const snapshot = await get(gameRef);
+    const data = snapshot.val();
+    const intentosArray = data.intentos ? Object.values(data.intentos) : [];
+    const currentRowIndex = intentosArray.length;
+    
+    if (currentRowIndex >= 5) {
+        showToast("Se acabaron los intentos.");
+        return;
+    }
+    
+    const currentRowElement = gameGrid.children[currentRowIndex];
 
     if (guess.length !== 5) {
         showToast("¡Tu intento debe tener 5 letras!");
@@ -277,19 +375,21 @@ function handleGuess() {
         return;
     }
     
-    // ¡NUEVA VALIDACIÓN DE DICCIONARIO!
+    // 2. Validación de Diccionario
     if (!DICCIONARIO.has(guess)) {
         showToast("Esa palabra no está en el diccionario.");
-        applyAnimation(gameGrid.children[intentosArray.length], 'shake'); // Sacude la fila actual
+        // Aplicar animación de shake a la fila de la cuadrícula
+        applyAnimation(currentRowElement, 'shake'); 
         return;
     }
 
+    // 3. Procesar y Guardar el intento
     const cellStates = procesarLogicaIntento(guess, secretWord);
     
     const intentosRef = ref(db, `games/${currentGameID}/intentos`);
     const newIntentRef = push(intentosRef);
     set(newIntentRef, {
-        guess: guess, // Guardar intento en minúsculas
+        guess: guess, 
         states: cellStates
     });
 
@@ -313,10 +413,10 @@ function renderizarGrid(intentos) {
         
         for (let i = 0; i < 5; i++) {
             const cell = row.children[i];
-            // ACTUALIZADO: Mostrar la letra en mayúsculas
             cell.textContent = guess[i].toUpperCase(); 
             cell.classList.add(`cell-${states[i]}`);
             
+            // Añadir animación de volteo
             if (rowIndex === intentos.length - 1 && !cell.classList.contains('cell-reveal')) {
                  setTimeout(() => {
                     cell.classList.add('cell-reveal');
@@ -329,7 +429,7 @@ function renderizarGrid(intentos) {
 }
 
 /**
- * Lógica pura de Wordle (ahora todo en minúsculas)
+ * Lógica pura de Wordle (todo en minúsculas)
  */
 function procesarLogicaIntento(guess, secret) {
     const secretWordMap = {};
@@ -355,21 +455,36 @@ function procesarLogicaIntento(guess, secret) {
     return cellStates;
 }
 
+// MEJORA 5: Desconexión explícita de listeners
 function endGame() {
     isGameActive = false;
     guessInput.disabled = true;
     guessBtn.disabled = true;
 
+    // Desconecta el listener de la partida
     if (gameListener) {
-        gameListener(); // Desconecta el listener
+        gameListener(); 
+        gameListener = null;
     }
     
     resetBtn.classList.remove('hidden');
     resetBtn.textContent = "Volver al Lobby";
-    resetBtn.addEventListener('click', () => {
-        window.location.reload();
-    }, { once: true });
+    // Asegurarse de que el listener de recarga se desconecte si se llama a endGame
+    resetBtn.removeEventListener('click', handleResetClick); 
+    resetBtn.addEventListener('click', handleResetClick, { once: true });
 }
+
+function handleResetClick() {
+    // Asegurarse de que no haya listeners activos antes de la recarga
+    if (gameListener) {
+        gameListener();
+    }
+    if (statusListener) {
+        statusListener();
+    }
+    window.location.reload();
+}
+
 
 // --- 7. Funciones de Utilidad (Animaciones y Toasts) ---
 function triggerVictoryAnimation(rowIndex) {
