@@ -1,7 +1,6 @@
 // --- 1. Configuración de Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, push } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-// Importamos nuestro diccionario
 import { DICCIONARIO } from './diccionario.js';
 
 // Tu configuración de Firebase
@@ -39,7 +38,6 @@ const resetBtn = document.getElementById('reset-btn');
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 const toastContainer = document.getElementById('toast-container');
 
-// Elementos de control fino
 const createSectionWordle = document.getElementById('create-section');
 const joinSectionWordle = document.getElementById('join-section');
 const secretWordDisplay = document.getElementById('secret-word-display');
@@ -65,9 +63,25 @@ guessInput.addEventListener('keydown', (e) => {
 if (keyboardContainer) {
     keyboardContainer.addEventListener('click', handleKeyboardClick);
 }
-resetBtn.addEventListener('click', handleResetClick); // Usar la función global de reset
+resetBtn.addEventListener('click', handleResetClick); 
+
+// --- FUNCIÓN DE ACTIVACIÓN DE MENÚ ---
+function setActiveMenu() {
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    document.querySelectorAll('.dashboard-menu a').forEach(link => {
+        link.classList.remove('active');
+        const linkUrl = link.getAttribute('href');
+        
+        if (currentPage === 'index.html' && linkUrl === 'index.html') {
+            link.classList.add('active');
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    setActiveMenu(); // MARCAR EL MENÚ ACTIVO
+
     // Inicializar Dark Mode
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
@@ -461,7 +475,7 @@ function endGameWordle() {
     resetBtn.addEventListener('click', handleResetClick, { once: true });
 }
 
-// --- FUNCIONES DE UTILIDAD (Quedan aquí) ---
+// --- FUNCIONES DE UTILIDAD ---
 
 function showToast(message, type = 'error') {
     const toast = document.createElement('div');
