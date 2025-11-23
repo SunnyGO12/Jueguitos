@@ -260,7 +260,8 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        if (data.board === null || data.view === null) { 
+        // CORRECCIÓN CLAVE: Verificar si el tablero y la vista existen antes de intentar renderizar
+        if (data.board === null || data.view === null || data.board === undefined || data.view === undefined) { 
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
             return;
         }
@@ -318,6 +319,9 @@ function renderMinesweeperGrid(view, board) {
     minesweeperGrid.innerHTML = ''; 
     
     for (let r = 0; r < GRID_SIZE; r++) {
+        // Para evitar el error, si la fila no existe o es null, la saltamos (medida de seguridad)
+        if (!view[r] || !board[r]) continue; 
+
         for (let c = 0; c < GRID_SIZE; c++) {
             const cellData = view[r][c];
             const cellValue = board[r][c];
