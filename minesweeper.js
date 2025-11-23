@@ -257,7 +257,7 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        // CORRECCIÓN DE ERROR: Verificar si el tablero y la vista existen antes de intentar renderizar
+        // CRÍTICO: Verificar si el tablero y la vista existen antes de intentar renderizar
         if (data.board === null || data.view === null || data.board === undefined || data.view === undefined) { 
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
             return;
@@ -419,8 +419,12 @@ function revealCell(r, c) {
         if (data.winner) return; 
         if (data.view[r][c].revealed || data.view[r][c].flagged) return;
 
-        let newBoard = data.board.map(row => [...row]); 
-        let newView = data.view.map(row => row.map(cell => ({ ...cell })));
+        // **CORRECCIÓN DE ERROR:** Usar JSON.parse/stringify para clonación segura en Firebase
+        const currentBoard = JSON.parse(JSON.stringify(data.board));
+        const currentView = JSON.parse(JSON.stringify(data.view));
+
+        let newBoard = currentBoard.map(row => [...row]); 
+        let newView = currentView.map(row => row.map(cell => ({ ...cell })));
 
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
