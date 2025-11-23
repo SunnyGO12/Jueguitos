@@ -80,6 +80,7 @@ body {
 
 .dashboard-menu {
     list-style: none;
+    display: block; /* Aseguramos que se comporte como bloque para una lista vertical */
 }
 
 .dashboard-menu li a {
@@ -174,7 +175,7 @@ body.dark-mode #tictactoe-game-container {
 }
 
 /* --- GESTIÓN DE JUEGOS --- */
-/* CLASE CORREGIDA: Usar !important para asegurar el display: none */
+/* CLASE CRÍTICA: Usar !important para asegurar el display: none */
 .hidden {
     display: none !important; 
 }
