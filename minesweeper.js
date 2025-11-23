@@ -58,7 +58,6 @@ const getIndex1D = (r, c) => r * GRID_SIZE + c;
  * Genera el tablero de minas y números en formato 1D List (Array de 64 elementos).
  */
 function generateMinesweeperBoard(size, mines, startR, startC) {
-    // Usamos una matriz 2D temporalmente para la lógica de generación
     let board2D = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
 
@@ -117,7 +116,6 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
 
 /**
  * Revelación en Cascada (Adaptada a 1D)
- * Trabaja con el array 'view' 1D.
  */
 function checkAndRevealAdjacent(r, c, board, view, player) {
     const i = getIndex1D(r, c);
@@ -333,15 +331,20 @@ function initializeGridDisplay() {
 function renderMinesweeperGrid(view, board) {
     minesweeperGrid.innerHTML = ''; 
     
+    // Si data.view es un objeto, forzamos su conversión a un array denso.
+    const viewList = Array.isArray(view) ? view : Object.values(view || {});
+    const boardList = Array.isArray(board) ? board : Object.values(board || {});
+
+
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
-            const i = getIndex1D(r, c); // Usamos el índice 1D
-            
-            // Verificación de seguridad simple ya que trabajamos con arrays 1D estables
-            if (!view[i] || !board[i] && board[i] !== 0) continue; 
+            const i = getIndex1D(r, c); // Índice 1D
 
-            const cellData = view[i];
-            const cellValue = board[i];
+            // Verificación de seguridad usando la longitud esperada
+            if (i >= viewList.length || i >= boardList.length) continue; 
+            
+            const cellData = viewList[i];
+            const cellValue = boardList[i];
             const cell = document.createElement('div');
             
             cell.classList.add('mine-cell');
@@ -386,15 +389,14 @@ function handleFlag(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
-        
-        // El tablero es nulo o el juego ha terminado
         if (data.winner || data.board === null) return;
         
         const i = getIndex1D(r, c);
-        if (data.view[i].revealed) return;
 
         // Clonación profunda de view (array 1D es mucho más fácil)
         let newView = data.view.map(cell => ({ ...cell }));
+        
+        if (newView[i].revealed) return; // No se puede poner bandera en celda revelada
         
         // Toggle de la bandera
         newView[i].flagged = !newView[i].flagged;
@@ -444,12 +446,13 @@ function revealCell(r, c) {
 
         const i = getIndex1D(r, c);
         
-        if (data.winner) return; 
-        if (data.view[i].revealed || data.view[i].flagged) return;
-
         // Clonación de los arrays 1D (mucho más fácil y seguro)
         let newBoard = [...data.board]; 
         let newView = data.view.map(cell => ({ ...cell }));
+        
+        if (data.winner) return; 
+        if (newView[i].revealed || newView[i].flagged) return;
+
 
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
