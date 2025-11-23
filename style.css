@@ -144,27 +144,41 @@ body.dark-mode .dashboard-menu li a:hover {
     background-color: var(--color-dashboard-hover-dark);
 }
 
-/* --- Contenedores del Juego (Estilos refinados) --- */
-#setup-container, #game-container, #lobby-container {
+/* --- Contenedores de Lobby/Juego (Estilos refinados) --- */
+#game-content-wrapper > div {
+    /* Aplicar estilos a cada área de juego (wordle-game-area, tictactoe-game-area, etc.) */
+    width: 90%;
+    max-width: 500px;
+}
+
+/* Estilo para los contenedores internos del juego */
+#lobby-container, #game-container, 
+#tictactoe-lobby-container, #tictactoe-game-container {
     background-color: var(--color-container-bg-light);
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     border: 1px solid var(--color-border-light);
     text-align: center;
-    width: 90%;
-    max-width: 420px; 
+    max-width: 420px; /* Wordle usa 420px, pero el wrapper es más grande */
+    margin: 0 auto; /* Centrar el contenedor específico */
     transition: background-color 0.3s, border-color 0.3s;
 }
 
-body.dark-mode #setup-container,
+body.dark-mode #lobby-container,
 body.dark-mode #game-container,
-body.dark-mode #lobby-container {
+body.dark-mode #tictactoe-lobby-container,
+body.dark-mode #tictactoe-game-container {
     background-color: var(--color-container-bg-dark);
     border-color: var(--color-border-dark);
 }
 
-/* --- Estilos del Lobby --- */
+/* --- GESTIÓN DE JUEGOS --- */
+.active-game {
+    display: block !important;
+}
+
+/* --- Estilos del Lobby General --- */
 .lobby-section {
     margin-top: 20px;
     padding-top: 20px;
@@ -191,17 +205,17 @@ body.dark-mode .lobby-section {
     margin: 10px 0;
 }
 
-/* Estilos para el Enlace de Compartir */
+/* Estilos para el Enlace de Compartir (Wordle) */
 .share-link-wrapper {
-    display: flex; /* Pone el input y el botón en la misma línea */
-    gap: 10px; /* Espacio entre ellos */
+    display: flex;
+    gap: 10px;
     width: 100%;
     margin-top: 5px;
     margin-bottom: 10px;
 }
 
 #game-link-text {
-    flex-grow: 1; /* El input ocupa el espacio sobrante */
+    flex-grow: 1;
     width: auto;
     margin: 0;
     font-size: 1em; 
@@ -220,9 +234,9 @@ body.dark-mode #game-link-text {
 }
 
 #copy-link-btn {
-    margin: 0; /* Resetea el margen del botón */
-    flex-shrink: 0; /* Evita que el botón se encoja */
-    background-color: var(--color-absent-light); /* Color gris */
+    margin: 0; 
+    flex-shrink: 0; 
+    background-color: var(--color-absent-light); 
 }
 
 body.dark-mode #copy-link-btn {
@@ -235,7 +249,7 @@ body.dark-mode #copy-link-btn {
 
 
 .hidden {
-    display: none;
+    display: none !important; /* Usar !important para la clase 'hidden' */
 }
 
 /* Inputs y Botones (Estilos refinados) */
@@ -245,7 +259,7 @@ input[type="text"], input[type="password"] {
     font-size: 16px;
     font-family: var(--font-main);
     border: 2px solid var(--color-border-light);
-    background-color: transparent; /* Fondo transparente */
+    background-color: transparent; 
     color: var(--color-text-light);
     border-radius: 5px;
     text-align: center;
@@ -296,7 +310,7 @@ button:hover {
     background-color: var(--color-btn-hover);
 }
 
-/* MEJORA 1: Info para el Retador */
+/* Info para el Retador (Wordle) */
 #retador-info {
     margin-bottom: 20px;
     padding: 10px;
@@ -314,7 +328,7 @@ body.dark-mode #retador-info {
     letter-spacing: 5px;
 }
 
-/* --- CUADRÍCULA --- */
+/* --- CUADRÍCULA WORDLE --- */
 #game-grid {
     display: grid;
     grid-template-rows: repeat(5, 1fr);
@@ -346,7 +360,7 @@ body.dark-mode .grid-cell {
     border-color: var(--color-border-dark);
 }
 
-/* Animación de Volteo (Flip) */
+/* Animaciones y Colores de Estado Wordle (flip, shake, jubilation, cell-correct, etc.) */
 .cell-reveal {
     animation: flip 0.6s ease forwards;
 }
@@ -357,7 +371,6 @@ body.dark-mode .grid-cell {
     100% { transform: scaleY(1); }
 }
 
-/* --- Animaciones de Feedback (Mejora 4) --- */
 .shake {
     animation: shake 0.5s ease;
 }
@@ -380,7 +393,6 @@ body.dark-mode .grid-cell {
 }
 
 
-/* Colores de estado (Ajustados para Modo Oscuro/Claro) */
 .cell-correct {
     background-color: var(--color-correct);
     color: var(--color-white);
@@ -402,7 +414,7 @@ body.dark-mode .cell-absent {
 }
 
 
-/* --- MEJORA 2 & 3: Estilos del Teclado en Pantalla --- */
+/* --- Estilos del Teclado en Pantalla --- */
 #keyboard-container {
     width: 100%;
     max-width: 500px;
@@ -421,7 +433,7 @@ body.dark-mode .cell-absent {
     flex-grow: 1;
     height: 40px;
     max-width: 40px;
-    background-color: var(--color-border-light); /* Gris claro por defecto */
+    background-color: var(--color-border-light); 
     color: var(--color-text-light);
     border-radius: 4px;
     transition: background-color 0.2s, color 0.2s;
@@ -439,7 +451,7 @@ body.dark-mode #keyboard-container button {
     max-width: 60px !important;
 }
 
-/* Colores del teclado según el estado de la letra (Mejora 3) */
+/* Colores del teclado según el estado de la letra */
 .keyboard-correct {
     background-color: var(--color-correct) !important;
     color: var(--color-white) !important;
@@ -448,7 +460,6 @@ body.dark-mode #keyboard-container button {
     background-color: var(--color-present) !important;
     color: var(--color-white) !important;
 }
-/* Estilo 'absent' para el teclado (usa el color de las celdas 'absent') */
 .keyboard-absent {
     background-color: var(--color-absent-light) !important;
     color: var(--color-white) !important;
@@ -456,6 +467,58 @@ body.dark-mode #keyboard-container button {
 body.dark-mode .keyboard-absent {
     background-color: var(--color-absent-dark) !important;
 }
+
+
+/* --- ESTILOS DE TIC-TAC-TOE --- */
+#tictactoe-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    width: 300px;
+    height: 300px;
+    margin: 20px auto;
+    border: 3px solid var(--color-absent-light);
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tictactoe-cell {
+    background-color: var(--color-container-bg-light);
+    border: 1px solid var(--color-border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.1s, color 0.3s;
+}
+
+.tictactoe-cell:hover {
+    background-color: var(--color-dashboard-hover);
+}
+
+/* Modo Oscuro para Tic-Tac-Toe */
+body.dark-mode #tictactoe-board {
+    border-color: var(--color-border-dark);
+}
+body.dark-mode .tictactoe-cell {
+    background-color: var(--color-container-bg-dark);
+    border-color: var(--color-border-dark);
+    color: var(--color-text-dark);
+}
+body.dark-mode .tictactoe-cell:hover {
+    background-color: var(--color-dashboard-hover-dark);
+}
+/* Estilos específicos para las marcas */
+.tictactoe-cell.X {
+    color: var(--color-correct); /* Verde */
+}
+.tictactoe-cell.O {
+    color: var(--color-present); /* Amarillo */
+}
+
 
 /* --- MENSAJES Y BOTONES DE FIN --- */
 #game-message {
@@ -579,11 +642,14 @@ body.dark-mode #dark-mode-toggle {
         width: 90%;
     }
     
-    #game-container, #lobby-container {
+    /* Contenedores de Lobby/Juego */
+    #lobby-container, #game-container, 
+    #tictactoe-lobby-container, #tictactoe-game-container {
         max-width: 100%; /* Ocupar todo el ancho */
         padding: 15px;
     }
     
+    /* Wordle específico */
     #game-grid {
         width: 280px; /* Más pequeño */
         gap: 4px;
@@ -613,6 +679,7 @@ body.dark-mode #dark-mode-toggle {
 }
 
 @media (max-width: 380px) {
+    /* Wordle específico */
     #game-grid {
         width: 250px;
     }
