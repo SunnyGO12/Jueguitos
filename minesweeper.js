@@ -50,9 +50,6 @@ const P_JOINER = 'P2';
 
 // --- 4. Funciones de Juego (Lógica de Buscaminas) ---
 
-/**
- * Genera el tablero de minas y números (solo se llama en el creador).
- */
 function generateMinesweeperBoard(size, mines) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
@@ -96,6 +93,41 @@ function generateMinesweeperBoard(size, mines) {
     }));
 
     return { board, view, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
+}
+
+/**
+ * REGLA CRÍTICA DE BUSCAMINAS: Revelación en Cascada
+ * Usa un algoritmo de inmersión para revelar celdas adyacentes si el valor es 0.
+ */
+function checkAndRevealAdjacent(r, c, board, view, player) {
+    // Si la celda está fuera del límite o ya está revelada, salimos.
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[r][c].revealed) {
+        return;
+    }
+
+    // Si es una mina o ya está marcada con bandera, no hacemos nada.
+    if (board[r][c] === -1 || view[r][c].flagged) {
+        return;
+    }
+
+    // Revelar la celda actual
+    view[r][c].revealed = true;
+    view[r][c].player = player;
+    
+    // Si la celda actual es un número (> 0), paramos la cascada aquí.
+    if (board[r][c] > 0) {
+        return;
+    }
+
+    // Si es 0, llamamos recursivamente a las 8 celdas vecinas.
+    for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+            // Evitar la celda actual (0, 0)
+            if (i === 0 && j === 0) continue; 
+            
+            checkAndRevealAdjacent(r + i, c + j, board, view, player);
+        }
+    }
 }
 
 
@@ -216,8 +248,6 @@ function iniciarJuegoMinesweeper(role) {
         statusListener = null;
     }
     
-    // El setup de la cuadrícula ya se hizo en initializeGridDisplay()
-    // Pero lo llamamos aquí también para asegurar el estado inicial
     initializeGridDisplay(); 
 
     sincronizarMinesweeper();
@@ -259,15 +289,11 @@ function updateScoreboard(data) {
 
 // --- 6. Manejo de Interacción y Renderizado ---
 
-/**
- * Función CRÍTICA para que el tablero se muestre al cargar el lobby.
- */
 function initializeGridDisplay() {
     minesweeperGrid.innerHTML = ''; 
     minesweeperGrid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
     minesweeperGrid.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
     
-    // Crear celdas vacías para que el div #minesweeper-grid tenga contenido
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
             const cell = document.createElement('div');
@@ -325,6 +351,7 @@ function handleMinesweeperClick(e) {
     if (e.button === 0) {
         revealCell(r, c);
     }
+    // NOTA: La lógica de banderas (clic derecho) debe ser implementada
 }
 
 // Lógica CRÍTICA de Buscaminas (CORREGIDA)
@@ -333,34 +360,53 @@ function revealCell(r, c) {
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
         
-        if (data.view[r][c].revealed || data.view[r][c].flagged || data.winner) return;
+        if (data.winner) return; // Si ya terminó, salimos.
+        if (data.view[r][c].revealed || data.view[r][c].flagged) return;
 
+        // Clonamos las matrices para trabajar con ellas
+        let newBoard = data.board.map(row => [...row]); 
         let newView = data.view.map(row => row.map(cell => ({ ...cell })));
+
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
         let newRemainingMines = data.remainingMines;
         let gameResult = data.winner; 
 
-        newView[r][c].revealed = true;
-        newView[r][c].player = playerRole; // Marcar qué jugador hizo el movimiento
-
         // Lógica de derrota y puntuación
-        if (data.board[r][c] === -1) {
+        if (newBoard[r][c] === -1) {
             // ¡Mina! El jugador activo PIERDE, el oponente GANA.
             const winningPlayer = playerRole === P_CREATOR ? P_JOINER : P_CREATOR;
             gameResult = winningPlayer; 
 
+            newView[r][c].revealed = true;
+            newView[r][c].player = playerRole; 
+
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
-        } else if (data.board[r][c] > 0) {
-            // Número: Añade puntos
+        } else if (newBoard[r][c] > 0) {
+            // Número: Solo revela la celda y suma puntos.
+            newView[r][c].revealed = true;
+            newView[r][c].player = playerRole;
+
             if (playerRole === P_CREATOR) {
-                newScoreP1 += data.board[r][c];
+                newScoreP1 += newBoard[r][c];
             } else {
-                newScoreP2 += data.board[r][c];
+                newScoreP2 += newBoard[r][c];
             }
         } else {
-            // Celda vacía (0): Implementar lógica de revelación en cascada (pendiente)
+            // Celda vacía (0): Inicia la cascada y suma 1 punto por cada celda revelada.
+            const initialRevealCount = newView.flat().filter(c => c.revealed).length;
+            
+            checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
+
+            const finalRevealCount = newView.flat().filter(c => c.revealed).length;
+            const pointsEarned = finalRevealCount - initialRevealCount;
+
+            if (playerRole === P_CREATOR) {
+                newScoreP1 += pointsEarned;
+            } else {
+                newScoreP2 += pointsEarned;
+            }
         }
 
         update(gameRef, {
@@ -388,6 +434,7 @@ minesweeperJoinBtn.addEventListener('click', unirseAPartidaMinesweeper);
 minesweeperGrid.addEventListener('click', handleMinesweeperClick); 
 minesweeperGrid.addEventListener('contextmenu', (e) => {
     e.preventDefault(); 
+    // Lógica de bandera
 });
 
 
@@ -427,7 +474,7 @@ function applyAnimation(element, animationClass) {
 
 document.addEventListener('DOMContentLoaded', () => {
     setActiveMenu(); 
-    initializeGridDisplay(); // Llamada CRÍTICA para que el tablero se muestre en el lobby
+    initializeGridDisplay(); 
     
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
