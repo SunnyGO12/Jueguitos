@@ -16,10 +16,10 @@
             <h2>🎮 Juegos</h2>
         </div>
         <ul class="dashboard-menu">
-            <li><a href="index.html">Wordle para Dos</a></li>
-            <li><a href="tictactoe.html">Tic-Tac-Toe</a></li>
-            <li><a href="minesweeper.html" class="active">Buscaminas</a></li>
-            <li><a href="chess.html">Ajedrez</a></li>
+            <li><a href="index.html" id="menu-wordle">Wordle para Dos</a></li>
+            <li><a href="tictactoe.html" id="menu-tictactoe">Tic-Tac-Toe</a></li>
+            <li><a href="minesweeper.html" id="menu-minesweeper">Buscaminas</a></li>
+            <li><a href="chess.html" id="menu-chess">Ajedrez</a></li>
         </ul>
     </nav>
 
@@ -29,8 +29,43 @@
         
         <div id="minesweeper-game-area">
             <h1>Buscaminas (Multijugador)</h1>
-            <p>La lógica de Buscaminas es compleja. Se requiere el archivo `minesweeper.js` para la funcionalidad.</p>
-            <p style="margin-top: 20px;">**Próximamente...**</p>
+
+            <div id="minesweeper-lobby-container" class="lobby-container">
+                <h2>¡Juguemos a la Suerte!</h2>
+                
+                <div class="lobby-section">
+                    <h3>Configuración de Partida</h3>
+                    <p>Tablero: 8x8 con 10 minas (Predeterminado)</p>
+                    <button id="minesweeper-create-btn">Crear Partida</button>
+                </div>
+                
+                <div class="lobby-section">
+                    <h3>Unirse a una Partida</h3>
+                    <input type="text" id="minesweeper-join-input" placeholder="Código de 5 letras" maxlength="5">
+                    <button id="minesweeper-join-btn">Unirse</button>
+                </div>
+                
+                <div id="minesweeper-code-display" class="hidden">
+                    <p>Código:</p>
+                    <h3 class="room-code-display minesweeper-code">XXXXX</h3>
+                    <p>Esperando a que el jugador 2 se una...</p>
+                </div>
+            </div>
+
+            <div id="minesweeper-game-container" class="hidden">
+                <h3 id="minesweeper-status">Busca una mina ¡o réstale puntos a tu oponente!</h3>
+                
+                <div id="minesweeper-info-bar">
+                    <span id="player-score">Tú: 0 </span> | 
+                    <span id="opponent-score">Oponente: 0</span> | 
+                    <span id="mines-remaining">Minas: 10</span>
+                </div>
+
+                <div id="minesweeper-grid">
+                    </div>
+                
+                <button id="minesweeper-reset-btn" class="hidden">Volver al Lobby</button>
+            </div>
         </div>
     </main>
 
