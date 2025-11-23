@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-// Tu configuración de Firebase (DEBE SER LA MISMA QUE EN script.js)
+// Tu configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyCKteZmrBY-qSjxbVRVNwSVZWOtPerw_a8",
     authDomain: "multiplayer-f7e23.firebaseapp.com",
@@ -45,8 +45,24 @@ tictactoeJoinBtn.addEventListener('click', unirseAPartidaTicTacToe);
 tictactoeBoard.addEventListener('click', handleTicTacToeClick);
 tictactoeResetBtn.addEventListener('click', handleResetClick); 
 
+// --- FUNCIÓN DE ACTIVACIÓN DE MENÚ ---
+function setActiveMenu() {
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    document.querySelectorAll('.dashboard-menu a').forEach(link => {
+        link.classList.remove('active');
+        const linkUrl = link.getAttribute('href');
+        
+        if (linkUrl === currentPage) {
+            link.classList.add('active');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar Dark Mode (código copiado)
+    setActiveMenu(); // MARCAR EL MENÚ ACTIVO
+
+    // Inicializar Dark Mode
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
@@ -67,7 +83,7 @@ darkModeToggle.addEventListener('click', () => {
 });
 
 
-// --- LÓGICA GENERAL/UTILIDAD (Copiada) ---
+// --- LÓGICA GENERAL/UTILIDAD ---
 
 function generarCodigo(longitud) {
     let codigo = '';
@@ -103,7 +119,6 @@ function resetGameListeners() {
 
 function handleResetClick() {
     resetGameListeners();
-    // Simplemente recarga la página, volviendo al lobby de TicTacToe
     window.location.reload(); 
 }
 
