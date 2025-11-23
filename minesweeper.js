@@ -97,7 +97,7 @@ function generateMinesweeperBoard(size, mines) {
 
 /**
  * REGLA CRÍTICA DE BUSCAMINAS: Revelación en Cascada
- * Usa un algoritmo de inmersión para revelar celdas adyacentes si el valor es 0.
+ * Modifica la matriz 'view' en su lugar.
  */
 function checkAndRevealAdjacent(r, c, board, view, player) {
     // Si la celda está fuera del límite o ya está revelada, salimos.
@@ -183,7 +183,7 @@ async function crearPartidaMinesweeper() {
     set(newGameRef, {
         gameType: 'minesweeper',
         status: 'waiting',
-        player1: P_CREATOR, // Player 1 (Creador)
+        player1: P_CREATOR, 
         player2: null,
         ...initialState 
     });
@@ -307,7 +307,7 @@ function initializeGridDisplay() {
 
 
 function renderMinesweeperGrid(view, board) {
-    minesweeperGrid.innerHTML = ''; // Limpiar grid (Necesario si la estructura es dinámica)
+    minesweeperGrid.innerHTML = ''; 
     
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
@@ -340,6 +340,11 @@ function renderMinesweeperGrid(view, board) {
     }
 }
 
+/**
+ * Función para manejar los clics.
+ * Clic izquierdo (e.button === 0): Revelar.
+ * Clic derecho (e.button === 2): Bandera.
+ */
 function handleMinesweeperClick(e) {
     const cell = e.target.closest('.mine-cell');
     if (!cell || !isGameActive) return;
@@ -347,12 +352,30 @@ function handleMinesweeperClick(e) {
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
     
-    // 1. Manejar Clic Izquierdo (Revelar)
+    // Clic izquierdo
     if (e.button === 0) {
         revealCell(r, c);
-    }
-    // NOTA: La lógica de banderas (clic derecho) debe ser implementada
+    } 
 }
+
+// Función para manejar el clic derecho (necesita un event listener de 'contextmenu' en DOMContentLoaded)
+function handleFlag(r, c) {
+    const gameRef = ref(db, `games/${currentGameID}`);
+    get(gameRef).then(snapshot => {
+        const data = snapshot.val();
+        if (data.winner || data.view[r][c].revealed) return;
+
+        let newView = data.view.map(row => row.map(cell => ({ ...cell })));
+        
+        // Toggle de la bandera
+        newView[r][c].flagged = !newView[r][c].flagged;
+
+        update(gameRef, {
+            view: newView
+        });
+    });
+}
+
 
 // Lógica CRÍTICA de Buscaminas (CORREGIDA)
 function revealCell(r, c) {
@@ -360,10 +383,9 @@ function revealCell(r, c) {
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
         
-        if (data.winner) return; // Si ya terminó, salimos.
+        if (data.winner) return; 
         if (data.view[r][c].revealed || data.view[r][c].flagged) return;
 
-        // Clonamos las matrices para trabajar con ellas
         let newBoard = data.board.map(row => [...row]); 
         let newView = data.view.map(row => row.map(cell => ({ ...cell })));
 
@@ -384,7 +406,7 @@ function revealCell(r, c) {
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
         } else if (newBoard[r][c] > 0) {
-            // Número: Solo revela la celda y suma puntos.
+            // Número: Revela la celda y suma puntos.
             newView[r][c].revealed = true;
             newView[r][c].player = playerRole;
 
@@ -397,6 +419,7 @@ function revealCell(r, c) {
             // Celda vacía (0): Inicia la cascada y suma 1 punto por cada celda revelada.
             const initialRevealCount = newView.flat().filter(c => c.revealed).length;
             
+            // Llama a la función recursiva para revelar el área vacía
             checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
 
             const finalRevealCount = newView.flat().filter(c => c.revealed).length;
@@ -408,6 +431,11 @@ function revealCell(r, c) {
                 newScoreP2 += pointsEarned;
             }
         }
+        
+        // Contar minas restantes (simplificado, asume que las marcadas con bandera son correctas)
+        let flaggedCount = newView.flat().filter(c => c.flagged).length;
+        newRemainingMines = NUM_MINES - flaggedCount;
+
 
         update(gameRef, {
             view: newView,
@@ -434,7 +462,12 @@ minesweeperJoinBtn.addEventListener('click', unirseAPartidaMinesweeper);
 minesweeperGrid.addEventListener('click', handleMinesweeperClick); 
 minesweeperGrid.addEventListener('contextmenu', (e) => {
     e.preventDefault(); 
-    // Lógica de bandera
+    const cell = e.target.closest('.mine-cell');
+    if (cell && isGameActive) {
+        const r = parseInt(cell.dataset.row);
+        const c = parseInt(cell.dataset.col);
+        handleFlag(r, c);
+    }
 });
 
 
