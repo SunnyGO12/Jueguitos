@@ -21,11 +21,6 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // --- 2. Elementos del DOM ---
-// Gestión de juegos
-const dashboardMenu = document.querySelector('.dashboard-menu');
-const gameContentWrapper = document.getElementById('game-content-wrapper');
-
-// Wordle
 const lobbyContainer = document.getElementById('lobby-container');
 const gameContainer = document.getElementById('game-container');
 const createGameBtn = document.getElementById('create-game-btn');
@@ -41,27 +36,15 @@ const guessInput = document.getElementById('guess-input');
 const guessBtn = document.getElementById('guess-btn');
 const gameMessage = document.getElementById('game-message');
 const resetBtn = document.getElementById('reset-btn');
+const darkModeToggle = document.getElementById('dark-mode-toggle');
+const toastContainer = document.getElementById('toast-container');
+
+// Elementos de control fino
+const createSectionWordle = document.getElementById('create-section');
+const joinSectionWordle = document.getElementById('join-section');
 const secretWordDisplay = document.getElementById('secret-word-display');
 const retadorInfo = document.getElementById('retador-info');
 const keyboardContainer = document.getElementById('keyboard-container');
-
-// Wordle Lobby Sections
-const createSectionWordle = document.getElementById('create-section');
-const joinSectionWordle = document.getElementById('join-section');
-
-// Tic-Tac-Toe
-const tictactoeLobbyContainer = document.getElementById('tictactoe-lobby-container'); 
-const tictactoeCreateBtn = document.getElementById('tictactoe-create-btn');
-const tictactoeJoinBtn = document.getElementById('tictactoe-join-btn');
-const tictactoeJoinInput = document.getElementById('tictactoe-join-input');
-const tictactoeCodeDisplay = document.getElementById('tictactoe-code-display');
-const tictactoeGameContainer = document.getElementById('tictactoe-game-container');
-const tictactoeBoard = document.getElementById('tictactoe-board');
-const tictactoeStatus = document.getElementById('tictactoe-status');
-const tictactoeResetBtn = document.getElementById('tictactoe-reset-btn');
-
-const darkModeToggle = document.getElementById('dark-mode-toggle');
-const toastContainer = document.getElementById('toast-container');
 
 // --- 3. Variables de Estado Global ---
 let currentGameID = null;
@@ -70,13 +53,8 @@ let secretWord = null;
 let isGameActive = false;
 let gameListener = null; 
 let statusListener = null; 
-let currentActiveGame = 'wordle'; 
 
 // --- 4. Event Listeners ---
-// Gestión de juegos
-dashboardMenu.addEventListener('click', handleMenuClick);
-
-// Wordle
 createGameBtn.addEventListener('click', crearPartidaWordle);
 joinGameBtn.addEventListener('click', unirseAPartidaWordle);
 copyLinkBtn.addEventListener('click', copiarEnlace);
@@ -87,26 +65,18 @@ guessInput.addEventListener('keydown', (e) => {
 if (keyboardContainer) {
     keyboardContainer.addEventListener('click', handleKeyboardClick);
 }
+resetBtn.addEventListener('click', handleResetClick); // Usar la función global de reset
 
-// Tic-Tac-Toe
-tictactoeCreateBtn.addEventListener('click', crearPartidaTicTacToe);
-tictactoeJoinBtn.addEventListener('click', unirseAPartidaTicTacToe);
-tictactoeBoard.addEventListener('click', handleTicTacToeClick);
-tictactoeResetBtn.addEventListener('click', handleResetClick); 
-
-// Configuración inicial
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar Dark Mode
     if (localStorage.getItem('dark-mode') === 'true') {
         document.body.classList.add('dark-mode');
         darkModeToggle.textContent = '☀️';
     }
-    // Inicializar el dashboard en Wordle
-    handleMenuClick(null, 'wordle'); 
-
-    // Lógica para unirse a través de URL hash (asumiendo Wordle por defecto si no se especifica)
+    // Cargar código de partida desde la URL
     if (window.location.hash) {
         const gameCodeFromURL = window.location.hash.substring(1).toUpperCase();
-        joinCodeInput.value = gameCodeFromURL; 
+        joinCodeInput.value = gameCodeFromURL;
         showToast("Código de partida cargado desde el enlace.", 'success');
     }
 });
@@ -117,77 +87,6 @@ darkModeToggle.addEventListener('click', () => {
     localStorage.setItem('dark-mode', isDarkMode);
     darkModeToggle.textContent = isDarkMode ? '☀️' : '🌙';
 });
-
-
-// --- GESTIÓN DE JUEGOS ---
-
-function handleMenuClick(event, gameIdOverride) {
-    if (event) {
-        event.preventDefault();
-        const target = event.target.closest('a');
-        if (!target) return;
-        currentActiveGame = target.getAttribute('data-game');
-    } else if (gameIdOverride) {
-        currentActiveGame = gameIdOverride;
-    }
-
-    // 1. Limpiar y desactivar listeners
-    resetGameListeners();
-    currentGameID = null;
-    isGameActive = false;
-    playerRole = null;
-
-    // 2. Ocultar todos los contenedores de juego
-    document.querySelectorAll('[data-game]').forEach(el => {
-        el.classList.add('hidden');
-        el.classList.remove('active-game');
-    });
-
-    // 3. Mostrar solo el contenedor del juego activo
-    const activeGameArea = document.getElementById(`${currentActiveGame}-game-area`);
-    if (activeGameArea) {
-        activeGameArea.classList.remove('hidden');
-        activeGameArea.classList.add('active-game');
-    }
-
-    // 4. Actualizar el estilo "active" en el menú
-    document.querySelectorAll('.dashboard-menu a').forEach(a => {
-        a.classList.remove('active');
-        if (a.getAttribute('data-game') === currentActiveGame) {
-            a.classList.add('active');
-        }
-    });
-    
-    // 5. **CORRECCIÓN CLAVE:** Resetear la UI del juego activo al estado de lobby
-    if (currentActiveGame === 'wordle') {
-        // Mostrar lobby, ocultar juego, mostrar secciones de crear/unir
-        lobbyContainer.classList.remove('hidden');
-        gameContainer.classList.add('hidden');
-        createSectionWordle.classList.remove('hidden');
-        joinSectionWordle.classList.remove('hidden');
-        gameCodeDisplay.classList.add('hidden');
-        
-    } else if (currentActiveGame === 'tictactoe') {
-        // Mostrar lobby, ocultar juego, mostrar botones iniciales
-        tictactoeLobbyContainer.classList.remove('hidden');
-        tictactoeGameContainer.classList.add('hidden');
-        tictactoeCodeDisplay.classList.add('hidden'); 
-        
-        // Asegurar que las secciones con los botones de Crear/Unir estén visibles
-        document.querySelectorAll('#tictactoe-lobby-container .lobby-section').forEach(el => el.classList.remove('hidden'));
-    }
-}
-
-function resetGameListeners() {
-    if (gameListener) {
-        gameListener();
-        gameListener = null;
-    }
-    if (statusListener) {
-        statusListener();
-        statusListener = null;
-    }
-}
 
 
 // --- LÓGICA GENERAL ---
@@ -225,6 +124,17 @@ function copiarEnlace() {
     });
 }
 
+function resetGameListeners() {
+    if (gameListener) {
+        gameListener();
+        gameListener = null;
+    }
+    if (statusListener) {
+        statusListener();
+        statusListener = null;
+    }
+}
+
 function handleResetClick() {
     resetGameListeners();
     window.location.reload();
@@ -233,8 +143,6 @@ function handleResetClick() {
 // --- LÓGICA WORDLE ---
 
 async function crearPartidaWordle() {
-    if (currentActiveGame !== 'wordle') return; 
-
     const word = secretWordInput.value.trim().toLowerCase();
 
     if (word.length !== 5 || !/^[a-zñ]+$/.test(word)) {
@@ -266,7 +174,6 @@ async function crearPartidaWordle() {
     playerRole = 'retador';
     secretWord = word; 
 
-    // Ocultar solo las secciones de crear/unir
     createSectionWordle.classList.add('hidden');
     joinSectionWordle.classList.add('hidden');
     
@@ -288,8 +195,6 @@ async function crearPartidaWordle() {
 }
 
 function unirseAPartidaWordle() {
-    if (currentActiveGame !== 'wordle') return; 
-
     let code = joinCodeInput.value.trim().toUpperCase();
     
     if (code.includes('#')) {
@@ -495,7 +400,7 @@ function handleKeyboardClick(e) {
     const key = e.target.getAttribute('data-key');
     const action = e.target.getAttribute('data-action');
     
-    if (!isGameActive || playerRole !== 'retado' || currentActiveGame !== 'wordle') return;
+    if (!isGameActive || playerRole !== 'retado') return;
 
     if (key) {
         guessInput.value += key.toUpperCase();
@@ -556,203 +461,7 @@ function endGameWordle() {
     resetBtn.addEventListener('click', handleResetClick, { once: true });
 }
 
-// --- LÓGICA TIC-TAC-TOE ---
-
-async function crearPartidaTicTacToe() {
-    if (currentActiveGame !== 'tictactoe') return; 
-
-    tictactoeCreateBtn.disabled = true;
-    tictactoeCreateBtn.textContent = "Creando...";
-    resetGameListeners();
-
-    currentGameID = await generarCodigoUnico();
-    const newGameRef = ref(db, `games/${currentGameID}`);
-
-    set(newGameRef, {
-        gameType: 'tictactoe',
-        status: 'waiting',
-        playerX: 'creator', 
-        playerO: null,
-        board: [["", "", ""], ["", "", ""], ["", "", ""]],
-        currentTurn: 'X',
-        winner: null
-    });
-
-    playerRole = 'X';
-    
-    tictactoeCreateBtn.disabled = false;
-    tictactoeCreateBtn.textContent = "Crear Partida de X";
-    
-    // Ocultar secciones de Crear/Unir
-    document.querySelectorAll('#tictactoe-lobby-container .lobby-section').forEach(el => el.classList.add('hidden'));
-    
-    tictactoeCodeDisplay.classList.remove('hidden');
-    document.querySelector('.tictactoe-code').textContent = currentGameID;
-    tictactoeStatus.textContent = "Esperando a que el jugador 'O' se una...";
-
-    const gameStatusRef = ref(db, `games/${currentGameID}/status`);
-    statusListener = onValue(gameStatusRef, (snapshot) => {
-        if (snapshot.val() === 'active') {
-            iniciarTicTacToe('X');
-        }
-    });
-}
-
-function unirseAPartidaTicTacToe() {
-    if (currentActiveGame !== 'tictactoe') return; 
-
-    const code = tictactoeJoinInput.value.trim().toUpperCase();
-    
-    if (code.length !== 5) {
-        showToast("El código debe tener 5 letras.");
-        applyAnimation(tictactoeJoinInput, 'shake');
-        return;
-    }
-
-    const gameRef = ref(db, `games/${code}`);
-
-    get(gameRef).then((snapshot) => {
-        const data = snapshot.val();
-        if (!snapshot.exists() || data.gameType !== 'tictactoe') {
-            showToast("No se encontró esa partida de Tic-Tac-Toe.");
-        } else if (data.status === 'active') {
-            showToast("Esta partida ya está en progreso.");
-        } else {
-            currentGameID = code;
-            playerRole = 'O'; 
-            
-            update(gameRef, { status: 'active', playerO: 'joiner' });
-            
-            iniciarTicTacToe('O');
-        }
-    });
-}
-
-function iniciarTicTacToe(role) {
-    playerRole = role;
-    
-    tictactoeLobbyContainer.classList.add('hidden');
-    tictactoeGameContainer.classList.remove('hidden');
-    isGameActive = true;
-
-    if (statusListener) {
-        statusListener(); 
-        statusListener = null;
-    }
-
-    sincronizarTicTacToe();
-}
-
-function sincronizarTicTacToe() {
-    const gameRef = ref(db, `games/${currentGameID}`);
-    
-    resetGameListeners();
-    
-    gameListener = onValue(ref(db, `games/${currentGameID}`), (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        
-        renderTicTacToeBoard(data.board);
-        
-        if (data.winner) {
-            tictactoeStatus.textContent = data.winner === 'Draw' ? "¡Empate!" : `¡Ganó el jugador ${data.winner}!`;
-            endTicTacToe();
-        } else {
-            const isMyTurn = data.currentTurn === playerRole;
-            tictactoeStatus.textContent = isMyTurn ? `¡Tu Turno! Eres ${playerRole}` : `Turno del oponente (${data.currentTurn})`;
-        }
-    });
-}
-
-function renderTicTacToeBoard(board) {
-    tictactoeBoard.querySelectorAll('.tictactoe-cell').forEach(cell => {
-        const row = parseInt(cell.getAttribute('data-row'));
-        const col = parseInt(cell.getAttribute('data-col'));
-        const value = board[row][col];
-        
-        cell.textContent = value;
-        cell.className = 'tictactoe-cell'; 
-        if (value) {
-            cell.classList.add(value); 
-        }
-    });
-}
-
-function handleTicTacToeClick(e) {
-    const cell = e.target.closest('.tictactoe-cell');
-    if (!cell || !isGameActive) return;
-
-    const row = parseInt(cell.getAttribute('data-row'));
-    const col = parseInt(cell.getAttribute('data-col'));
-    
-    const gameRef = ref(db, `games/${currentGameID}`);
-    get(gameRef).then(snapshot => {
-        const data = snapshot.val();
-        
-        if (data.winner) {
-            showToast("El juego ha terminado.");
-            return;
-        }
-
-        if (data.currentTurn !== playerRole) {
-            showToast("¡No es tu turno!");
-            return;
-        }
-
-        if (data.board[row][col] !== "") {
-            showToast("Esa celda ya está ocupada.");
-            return;
-        }
-
-        let newBoard = [...data.board.map(r => [...r])]; 
-        newBoard[row][col] = playerRole;
-        
-        const winner = checkWinner(newBoard);
-        const nextTurn = playerRole === 'X' ? 'O' : 'X';
-        
-        update(gameRef, {
-            board: newBoard,
-            currentTurn: winner ? data.currentTurn : nextTurn, 
-            winner: winner
-        });
-    });
-}
-
-function checkWinner(board) {
-    const lines = [
-        [board[0][0], board[0][1], board[0][2]],
-        [board[1][0], board[1][1], board[1][2]],
-        [board[2][0], board[2][1], board[2][2]],
-        [board[0][0], board[1][0], board[2][0]],
-        [board[0][1], board[1][1], board[2][1]],
-        [board[0][2], board[1][2], board[2][2]],
-        [board[0][0], board[1][1], board[2][2]],
-        [board[0][2], board[1][1], board[2][0]],
-    ];
-
-    for (const line of lines) {
-        if (line.every(cell => cell === 'X')) return 'X';
-        if (line.every(cell => cell === 'O')) return 'O';
-    }
-
-    if (board.flat().every(cell => cell !== "")) {
-        return 'Draw';
-    }
-
-    return null;
-}
-
-function endTicTacToe() {
-    isGameActive = false;
-    resetGameListeners();
-
-    tictactoeResetBtn.classList.remove('hidden');
-    tictactoeResetBtn.textContent = "Volver a jugar";
-    tictactoeResetBtn.removeEventListener('click', handleResetClick); 
-    tictactoeResetBtn.addEventListener('click', handleResetClick, { once: true });
-}
-
-// --- FUNCIONES DE UTILIDAD ---
+// --- FUNCIONES DE UTILIDAD (Quedan aquí) ---
 
 function showToast(message, type = 'error') {
     const toast = document.createElement('div');
