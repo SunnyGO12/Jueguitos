@@ -36,8 +36,12 @@
     --color-absent-dark: #3a3a3c;
     --color-white: #ffffff;
     
-    /* CORRECCIÓN: Color de la celda revelada en modo oscuro para contraste */
     --color-revealed-dark: #2c2c2e; 
+    
+    /* NUEVA VARIABLE DE COLOR: Azul Claro para celdas no reveladas */
+    --color-mine-cell-light: #b0e0e6; /* Azul Claro (Powder Blue) */
+    --color-mine-cell-dark: #375a7f;  /* Azul Oscuro para contraste en modo oscuro */
+
 
     /* Colores UI */
     --color-btn: var(--color-correct); /* Botón principal es verde */
@@ -543,14 +547,17 @@ body.dark-mode .tictactoe-cell:hover {
 }
 
 body.dark-mode #minesweeper-grid {
-    border-color: var(--color-text-dark); /* Borde blanco/claro en modo oscuro */
+    border-color: var(--color-border-light); /* Mantiene el borde claro para contraste con celdas oscuras */
 }
 
 .mine-cell {
     min-width: 30px; 
     min-height: 30px;
     border: 1px solid var(--color-border-light);
-    background-color: var(--color-absent-light); /* Gris oscuro (no revelado) */
+    
+    /* CAMBIO CRÍTICO: Fondo azul claro para celdas no reveladas (Modo Claro) */
+    background-color: var(--color-mine-cell-light); 
+    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -559,12 +566,15 @@ body.dark-mode #minesweeper-grid {
     cursor: pointer;
     transition: background-color 0.1s;
     user-select: none;
-    color: var(--color-white); 
+    
+    color: var(--color-text-light); /* Asegura que la bandera/icono sea visible */
 }
 
 body.dark-mode .mine-cell {
-    background-color: var(--color-absent-dark);
+    /* CAMBIO CRÍTICO: Fondo azul oscuro para celdas no reveladas (Modo Oscuro) */
+    background-color: var(--color-mine-cell-dark);
     border-color: var(--color-border-dark);
+    color: var(--color-text-dark); /* Asegura que la bandera/icono sea visible */
 }
 
 .mine-cell:not(.revealed):hover {
