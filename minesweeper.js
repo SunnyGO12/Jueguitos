@@ -48,10 +48,18 @@ const P_CREATOR = 'P1';
 const P_JOINER = 'P2';
 
 
-// --- 4. Funciones de Juego (Lógica de Buscaminas) ---
+// --- 4. Funciones de Juego (Lógica de Buscaminas - ADAPTADA A 1D) ---
 
+// Función auxiliar para obtener el índice 1D a partir de 2D
+const getIndex1D = (r, c) => r * GRID_SIZE + c;
+
+
+/**
+ * Genera el tablero de minas y números en formato 1D List (Array de 64 elementos).
+ */
 function generateMinesweeperBoard(size, mines, startR, startC) {
-    let board = Array(size).fill(0).map(() => Array(size).fill(0));
+    // Usamos una matriz 2D temporalmente para la lógica de generación
+    let board2D = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
 
     // Colocar Minas (-1), evitando el área inicial (3x3)
@@ -59,13 +67,12 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
         let row = Math.floor(Math.random() * size);
         let col = Math.floor(Math.random() * size);
         
-        // Evitar la celda de inicio y sus vecinos inmediatos
         if (Math.abs(row - startR) <= 1 && Math.abs(col - startC) <= 1) {
             continue;
         }
         
-        if (board[row][col] !== -1) {
-            board[row][col] = -1;
+        if (board2D[row][col] !== -1) {
+            board2D[row][col] = -1;
             placedMines++;
         }
     }
@@ -73,7 +80,7 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
     // Calcular números adyacentes
     for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
-            if (board[r][c] === -1) continue;
+            if (board2D[r][c] === -1) continue;
 
             let count = 0;
             for (let i = -1; i <= 1; i++) {
@@ -81,48 +88,59 @@ function generateMinesweeperBoard(size, mines, startR, startC) {
                     const nr = r + i;
                     const nc = c + j;
 
-                    if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr][nc] === -1) {
+                    if (nr >= 0 && nr < size && nc >= 0 && nc < size && board2D[nr][nc] === -1) {
                         count++;
                     }
                 }
             }
-            board[r][c] = count;
+            board2D[r][c] = count;
         }
     }
     
-    // Matriz de vista inicial
-    let view = Array(size).fill(0).map(() => Array(size).fill({
-        revealed: false,
-        flagged: false,
-        player: null
-    }));
+    // Convertir a lista 1D para Firebase
+    let boardList = [];
+    let viewList = [];
 
-    return { board, view, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            boardList.push(board2D[r][c]);
+            viewList.push({
+                revealed: false,
+                flagged: false,
+                player: null
+            });
+        }
+    }
+
+    return { board: boardList, view: viewList, scoreP1: 0, scoreP2: 0, totalMines: mines, remainingMines: mines, winner: null };
 }
 
 /**
- * Revelación en Cascada
+ * Revelación en Cascada (Adaptada a 1D)
+ * Trabaja con el array 'view' 1D.
  */
 function checkAndRevealAdjacent(r, c, board, view, player) {
-    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[r][c].revealed) {
+    const i = getIndex1D(r, c);
+
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE || view[i].revealed) {
         return;
     }
-    if (board[r][c] === -1 || view[r][c].flagged) {
+    if (board[i] === -1 || view[i].flagged) {
         return;
     }
 
-    view[r][c].revealed = true;
-    view[r][c].player = player;
+    view[i].revealed = true;
+    view[i].player = player;
     
-    if (board[r][c] > 0) {
+    if (board[i] > 0) {
         return;
     }
 
-    for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-            if (i === 0 && j === 0) continue; 
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue; 
             
-            checkAndRevealAdjacent(r + i, c + j, board, view, player);
+            checkAndRevealAdjacent(r + dr, c + dc, board, view, player);
         }
     }
 }
@@ -316,12 +334,14 @@ function renderMinesweeperGrid(view, board) {
     minesweeperGrid.innerHTML = ''; 
     
     for (let r = 0; r < GRID_SIZE; r++) {
-        // SEGURIDAD CRÍTICA: Si la fila no existe o es null, la saltamos.
-        if (!view || !view[r] || !board || !board[r]) continue; 
-
         for (let c = 0; c < GRID_SIZE; c++) {
-            const cellData = view[r][c];
-            const cellValue = board[r][c];
+            const i = getIndex1D(r, c); // Usamos el índice 1D
+            
+            // Verificación de seguridad simple ya que trabajamos con arrays 1D estables
+            if (!view[i] || !board[i] && board[i] !== 0) continue; 
+
+            const cellData = view[i];
+            const cellValue = board[i];
             const cell = document.createElement('div');
             
             cell.classList.add('mine-cell');
@@ -366,14 +386,18 @@ function handleFlag(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
-        if (data.winner || data.view[r][c].revealed || data.board === null) return;
+        
+        // El tablero es nulo o el juego ha terminado
+        if (data.winner || data.board === null) return;
+        
+        const i = getIndex1D(r, c);
+        if (data.view[i].revealed) return;
 
-        // CRÍTICO: Clonación segura para banderas también
-        const currentView = JSON.parse(JSON.stringify(data.view));
-        let newView = currentView.map(row => row.map(cell => ({ ...cell })));
+        // Clonación profunda de view (array 1D es mucho más fácil)
+        let newView = data.view.map(cell => ({ ...cell }));
         
         // Toggle de la bandera
-        newView[r][c].flagged = !newView[r][c].flagged;
+        newView[i].flagged = !newView[i].flagged;
 
         update(gameRef, {
             view: newView
@@ -386,9 +410,9 @@ function handleFirstClick(r, c) {
     const { board, view, scoreP1, scoreP2, totalMines, remainingMines } = generateMinesweeperBoard(GRID_SIZE, NUM_MINES, r, c);
     
     // 2. Revelar la primera celda (iniciando cascada)
-    const initialRevealCount = view.flat().filter(cell => cell.revealed).length;
+    const initialRevealCount = view.filter(cell => cell.revealed).length;
     checkAndRevealAdjacent(r, c, board, view, playerRole);
-    const finalRevealCount = view.flat().filter(cell => cell.revealed).length;
+    const finalRevealCount = view.filter(cell => cell.revealed).length;
     
     const pointsEarned = finalRevealCount - initialRevealCount;
 
@@ -418,61 +442,49 @@ function revealCell(r, c) {
             return;
         }
 
-        if (data.winner) return; 
-        if (data.view[r][c].revealed || data.view[r][c].flagged) return;
-
-        // *****************************************************************
-        // CORRECCIÓN DE ERROR: Clonación manual y robusta
-        // Usamos JSON.parse/stringify para intentar obtener una copia del objeto,
-        // pero luego la clonamos de forma segura si existen los datos.
-        // *****************************************************************
-        const currentBoard = JSON.parse(JSON.stringify(data.board)) || [];
-        const currentView = JSON.parse(JSON.stringify(data.view)) || [];
-
-        // Inicializamos arrays densos de trabajo
-        let newBoard = Array(GRID_SIZE).fill(0).map((_, i) => currentBoard[i] ? [...currentBoard[i]] : Array(GRID_SIZE).fill(0));
-        let newView = Array(GRID_SIZE).fill(0).map((_, i) => {
-            if (currentView[i]) {
-                return currentView[i].map(cell => ({ ...cell }));
-            } else {
-                return Array(GRID_SIZE).fill({ revealed: false, flagged: false, player: null });
-            }
-        });
+        const i = getIndex1D(r, c);
         
-        // El resto de la lógica utiliza newBoard y newView, que ahora están garantizados de ser matrices densas 8x8.
+        if (data.winner) return; 
+        if (data.view[i].revealed || data.view[i].flagged) return;
+
+        // Clonación de los arrays 1D (mucho más fácil y seguro)
+        let newBoard = [...data.board]; 
+        let newView = data.view.map(cell => ({ ...cell }));
+
         let newScoreP1 = data.scoreP1;
         let newScoreP2 = data.scoreP2;
         let newRemainingMines = data.remainingMines;
         let gameResult = data.winner; 
 
         // Lógica de derrota y puntuación
-        if (newBoard[r][c] === -1) {
+        if (newBoard[i] === -1) {
             // ¡Mina!
             const winningPlayer = playerRole === P_CREATOR ? P_JOINER : P_CREATOR;
             gameResult = winningPlayer; 
 
-            newView[r][c].revealed = true;
-            newView[r][c].player = playerRole; 
+            newView[i].revealed = true;
+            newView[i].player = playerRole; 
 
             showToast(`¡Boom! ${playerRole} ha perdido. ¡${winningPlayer} gana!`, 'error');
 
-        } else if (newBoard[r][c] > 0) {
+        } else if (newBoard[i] > 0) {
             // Número
-            newView[r][c].revealed = true;
-            newView[r][c].player = playerRole;
+            newView[i].revealed = true;
+            newView[i].player = playerRole;
 
             if (playerRole === P_CREATOR) {
-                newScoreP1 += newBoard[r][c];
+                newScoreP1 += newBoard[i];
             } else {
-                newScoreP2 += newBoard[r][c];
+                newScoreP2 += newBoard[i];
             }
         } else {
             // Celda vacía (0)
-            const initialRevealCount = newView.flat().filter(c => c.revealed).length;
+            const initialRevealCount = newView.filter(c => c.revealed).length;
             
+            // Llama a la función recursiva para revelar el área vacía (usa arrays 1D)
             checkAndRevealAdjacent(r, c, newBoard, newView, playerRole);
 
-            const finalRevealCount = newView.flat().filter(c => c.revealed).length;
+            const finalRevealCount = newView.filter(c => c.revealed).length;
             const pointsEarned = finalRevealCount - initialRevealCount;
 
             if (playerRole === P_CREATOR) {
@@ -482,7 +494,7 @@ function revealCell(r, c) {
             }
         }
         
-        let flaggedCount = newView.flat().filter(c => c.flagged).length;
+        let flaggedCount = newView.filter(c => c.flagged).length;
         newRemainingMines = NUM_MINES - flaggedCount;
 
 
