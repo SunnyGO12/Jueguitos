@@ -50,9 +50,6 @@ const P_JOINER = 'P2';
 
 // --- 4. Funciones de Juego (Lógica de Buscaminas) ---
 
-/**
- * Genera el tablero de minas y números, GARANTIZANDO que (startR, startC) y su alrededor no tenga una mina.
- */
 function generateMinesweeperBoard(size, mines, startR, startC) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
@@ -260,7 +257,7 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        // CORRECCIÓN CLAVE: Verificar si el tablero y la vista existen antes de intentar renderizar
+        // CORRECCIÓN DE ERROR: Verificar si el tablero y la vista existen antes de intentar renderizar
         if (data.board === null || data.view === null || data.board === undefined || data.view === undefined) { 
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
             return;
@@ -319,8 +316,8 @@ function renderMinesweeperGrid(view, board) {
     minesweeperGrid.innerHTML = ''; 
     
     for (let r = 0; r < GRID_SIZE; r++) {
-        // Para evitar el error, si la fila no existe o es null, la saltamos (medida de seguridad)
-        if (!view[r] || !board[r]) continue; 
+        // SEGURIDAD CRÍTICA: Si la fila no existe o es null, la saltamos.
+        if (!view || !view[r] || !board || !board[r]) continue; 
 
         for (let c = 0; c < GRID_SIZE; c++) {
             const cellData = view[r][c];
