@@ -50,16 +50,19 @@ const P_JOINER = 'P2';
 
 // --- 4. Funciones de Juego (Lógica de Buscaminas) ---
 
+/**
+ * Genera el tablero de minas y números, GARANTIZANDO que (startR, startC) y su alrededor no tenga una mina.
+ */
 function generateMinesweeperBoard(size, mines, startR, startC) {
     let board = Array(size).fill(0).map(() => Array(size).fill(0));
     let placedMines = 0;
 
-    // Colocar Minas (-1), evitando el área inicial
+    // Colocar Minas (-1), evitando el área inicial (3x3)
     while (placedMines < mines) {
         let row = Math.floor(Math.random() * size);
         let col = Math.floor(Math.random() * size);
         
-        // Evitar la celda de inicio y sus vecinos inmediatos (3x3 área)
+        // Evitar la celda de inicio y sus vecinos inmediatos
         if (Math.abs(row - startR) <= 1 && Math.abs(col - startC) <= 1) {
             continue;
         }
@@ -238,7 +241,7 @@ function iniciarJuegoMinesweeper(role) {
     
     minesweeperLobbyContainer.classList.add('hidden');
     minesweeperGameContainer.classList.remove('hidden');
-    isGameActive = true; // El juego se marca como activo AQUI
+    isGameActive = true; 
 
     if (statusListener) {
         statusListener(); 
@@ -257,8 +260,7 @@ function sincronizarMinesweeper() {
         const data = snapshot.val();
         if (!data) return;
         
-        // Si el tablero no se ha generado, solo actualizamos el estado y esperamos.
-        if (data.board === null) {
+        if (data.board === null || data.view === null) { 
             minesweeperStatus.textContent = "Esperando el primer clic de un jugador...";
             return;
         }
@@ -348,7 +350,7 @@ function renderMinesweeperGrid(view, board) {
 
 function handleMinesweeperClick(e) {
     const cell = e.target.closest('.mine-cell');
-    if (!cell || !isGameActive) return; // Si isGameActive es falso (lobby), salimos
+    if (!cell || !isGameActive) return; 
 
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
@@ -363,7 +365,7 @@ function handleFlag(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
         const data = snapshot.val();
-        if (data.winner || data.view[r][c].revealed || data.board === null) return; // Bloquea si no hay tablero
+        if (data.winner || data.view[r][c].revealed || data.board === null) return;
 
         let newView = data.view.map(row => row.map(cell => ({ ...cell })));
         
@@ -397,7 +399,6 @@ function handleFirstClick(r, c) {
 }
 
 
-// Lógica CRÍTICA de Buscaminas (CORREGIDA)
 function revealCell(r, c) {
     const gameRef = ref(db, `games/${currentGameID}`);
     get(gameRef).then(snapshot => {
@@ -405,6 +406,11 @@ function revealCell(r, c) {
         
         // CRÍTICO: Si el tablero es null, este es el primer clic.
         if (data.board === null) {
+            // Permitimos el primer clic solo si el juego está activo (ambos jugadores están dentro)
+            if (!isGameActive) {
+                showToast("Espera a que se una el segundo jugador para iniciar.");
+                return;
+            }
             handleFirstClick(r, c);
             return;
         }
