@@ -50,7 +50,7 @@ const createSectionWordle = document.getElementById('create-section');
 const joinSectionWordle = document.getElementById('join-section');
 
 // Tic-Tac-Toe
-const tictactoeLobbyContainer = document.getElementById('tictactoe-lobby-container'); // Nuevo: Usar el contenedor del lobby
+const tictactoeLobbyContainer = document.getElementById('tictactoe-lobby-container'); 
 const tictactoeCreateBtn = document.getElementById('tictactoe-create-btn');
 const tictactoeJoinBtn = document.getElementById('tictactoe-join-btn');
 const tictactoeJoinInput = document.getElementById('tictactoe-join-input');
@@ -68,9 +68,9 @@ let currentGameID = null;
 let playerRole = null;
 let secretWord = null; 
 let isGameActive = false;
-let gameListener = null; // Listener de la partida activa
-let statusListener = null; // Listener de estado del lobby
-let currentActiveGame = 'wordle'; // El juego que se está mostrando
+let gameListener = null; 
+let statusListener = null; 
+let currentActiveGame = 'wordle'; 
 
 // --- 4. Event Listeners ---
 // Gestión de juegos
@@ -92,7 +92,7 @@ if (keyboardContainer) {
 tictactoeCreateBtn.addEventListener('click', crearPartidaTicTacToe);
 tictactoeJoinBtn.addEventListener('click', unirseAPartidaTicTacToe);
 tictactoeBoard.addEventListener('click', handleTicTacToeClick);
-tictactoeResetBtn.addEventListener('click', handleResetClick); // Usar la función global de reset
+tictactoeResetBtn.addEventListener('click', handleResetClick); 
 
 // Configuración inicial
 document.addEventListener('DOMContentLoaded', () => {
@@ -106,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lógica para unirse a través de URL hash (asumiendo Wordle por defecto si no se especifica)
     if (window.location.hash) {
         const gameCodeFromURL = window.location.hash.substring(1).toUpperCase();
-        // Por simplicidad, solo pre-rellenamos el input de Wordle
         joinCodeInput.value = gameCodeFromURL; 
         showToast("Código de partida cargado desde el enlace.", 'success');
     }
@@ -132,47 +131,50 @@ function handleMenuClick(event, gameIdOverride) {
         currentActiveGame = gameIdOverride;
     }
 
-    // Ocultar todos los contenedores de juego
+    // 1. Limpiar y desactivar listeners
+    resetGameListeners();
+    currentGameID = null;
+    isGameActive = false;
+    playerRole = null;
+
+    // 2. Ocultar todos los contenedores de juego
     document.querySelectorAll('[data-game]').forEach(el => {
         el.classList.add('hidden');
         el.classList.remove('active-game');
     });
 
-    // Mostrar solo el contenedor del juego activo
+    // 3. Mostrar solo el contenedor del juego activo y su lobby inicial
     const activeGameArea = document.getElementById(`${currentActiveGame}-game-area`);
     if (activeGameArea) {
         activeGameArea.classList.remove('hidden');
         activeGameArea.classList.add('active-game');
     }
 
-    // Actualizar el estilo "active" en el menú
+    // 4. Actualizar el estilo "active" en el menú
     document.querySelectorAll('.dashboard-menu a').forEach(a => {
         a.classList.remove('active');
         if (a.getAttribute('data-game') === currentActiveGame) {
             a.classList.add('active');
         }
     });
-
-    // Limpiar estado y desconectar listeners al cambiar de juego
-    resetGameListeners();
-    currentGameID = null;
-    isGameActive = false;
-    playerRole = null;
     
-    // **CORRECCIÓN CLAVE:** Asegurar que los lobbies muestren los controles iniciales
+    // 5. **CORRECCIÓN CLAVE:** Resetear la UI específica al estado de lobby
     if (currentActiveGame === 'wordle') {
+        // Mostrar lobby, ocultar juego, mostrar secciones de crear/unir
         lobbyContainer.classList.remove('hidden');
         gameContainer.classList.add('hidden');
         createSectionWordle.classList.remove('hidden');
         joinSectionWordle.classList.remove('hidden');
         gameCodeDisplay.classList.add('hidden');
     } else if (currentActiveGame === 'tictactoe') {
+        // Mostrar lobby, ocultar juego, mostrar botones iniciales
         tictactoeLobbyContainer.classList.remove('hidden');
         tictactoeGameContainer.classList.add('hidden');
-        // Asegurar que los botones de crear/unir sean visibles
         tictactoeCodeDisplay.classList.add('hidden'); 
+        // Asegurar que las secciones con los botones de Crear/Unir estén visibles
         document.querySelectorAll('#tictactoe-lobby-container .lobby-section').forEach(el => el.classList.remove('hidden'));
     }
+    // Para Buscaminas y Ajedrez, simplemente el área de juego ya tiene el mensaje "Próximamente"
 }
 
 function resetGameListeners() {
@@ -230,6 +232,8 @@ function handleResetClick() {
 // --- LÓGICA WORDLE ---
 
 async function crearPartidaWordle() {
+    if (currentActiveGame !== 'wordle') return; 
+
     const word = secretWordInput.value.trim().toLowerCase();
 
     if (word.length !== 5 || !/^[a-zñ]+$/.test(word)) {
@@ -283,6 +287,8 @@ async function crearPartidaWordle() {
 }
 
 function unirseAPartidaWordle() {
+    if (currentActiveGame !== 'wordle') return; 
+
     let code = joinCodeInput.value.trim().toUpperCase();
     
     if (code.includes('#')) {
@@ -484,7 +490,23 @@ function actualizarTecladoWordle(intentos) {
     });
 }
 
-// ... (handleKeyboardClick, procesarLogicaIntentoWordle, triggerVictoryAnimationWordle, endGameWordle)
+function handleKeyboardClick(e) {
+    const key = e.target.getAttribute('data-key');
+    const action = e.target.getAttribute('data-action');
+    
+    if (!isGameActive || playerRole !== 'retado' || currentActiveGame !== 'wordle') return;
+
+    if (key) {
+        guessInput.value += key.toUpperCase();
+    } else if (action === 'enter') {
+        handleGuessWordle();
+    } else if (action === 'del') {
+        guessInput.value = guessInput.value.slice(0, -1);
+    }
+    
+    guessInput.value = guessInput.value.slice(0, 5);
+    guessInput.focus(); 
+}
 
 function procesarLogicaIntentoWordle(guess, secret) {
     const secretWordMap = {};
@@ -536,6 +558,8 @@ function endGameWordle() {
 // --- LÓGICA TIC-TAC-TOE ---
 
 async function crearPartidaTicTacToe() {
+    if (currentActiveGame !== 'tictactoe') return; 
+
     tictactoeCreateBtn.disabled = true;
     tictactoeCreateBtn.textContent = "Creando...";
     resetGameListeners();
@@ -574,6 +598,8 @@ async function crearPartidaTicTacToe() {
 }
 
 function unirseAPartidaTicTacToe() {
+    if (currentActiveGame !== 'tictactoe') return; 
+
     const code = tictactoeJoinInput.value.trim().toUpperCase();
     
     if (code.length !== 5) {
