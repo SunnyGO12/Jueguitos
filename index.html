@@ -44,7 +44,7 @@
                 <h3>Unirse a una Partida</h3>
                 <p>Escribe el código de la partida (5 letras):</p>
                 <input type="text" id="join-code-input" placeholder="XXXXX" maxlength="5">
-                <button id="join-game-btn">Unir</se>
+                <button id="join-game-btn">Unir</button>
             </div>
             
              <div id="game-code-display" class="hidden">
@@ -61,6 +61,12 @@
 
 
         <div id="game-container" class="hidden">
+            
+            <div id="retador-info" class="hidden">
+                <p>¡Eres el Retador! Palabra Secreta:</p>
+                <h2 id="secret-word-display" style="color: var(--color-btn);">*****</h2>
+            </div>
+            
             <div id="game-grid">
                 <div class="grid-row">
                     <div class="grid-cell"></div>
@@ -109,6 +115,29 @@
             <div id="end-game-buttons">
                 <button id="reset-btn" class="hidden">Jugar de nuevo</button>
             </div>
+            
+            <div id="keyboard-container">
+                <div class="keyboard-row">
+                    <button data-key="q">Q</button><button data-key="w">W</button><button data-key="e">E</button>
+                    <button data-key="r">R</button><button data-key="t">T</button><button data-key="y">Y</button>
+                    <button data-key="u">U</button><button data-key="i">I</button><button data-key="o">O</button>
+                    <button data-key="p">P</button>
+                </div>
+                <div class="keyboard-row">
+                    <button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button>
+                    <button data-key="f">F</button><button data-key="g">G</button><button data-key="h">H</button>
+                    <button data-key="j">J</button><button data-key="k">K</button><button data-key="l">L</button>
+                    <button data-key="ñ">Ñ</button>
+                </div>
+                <div class="keyboard-row">
+                    <button data-action="enter" class="action-key">ENTER</button>
+                    <button data-key="z">Z</button><button data-key="x">X</button><button data-key="c">C</button>
+                    <button data-key="v">V</button><button data-key="b">B</button><button data-key="n">N</button>
+                    <button data-key="m">M</button>
+                    <button data-action="del" class="action-key">⌫</button>
+                </div>
+            </div>
+
         </div>
     </main>
 
