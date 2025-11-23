@@ -648,7 +648,7 @@ function sincronizarTicTacToe() {
     
     resetGameListeners();
     
-    gameListener = onValue(gameRef, (snapshot) => {
+    gameListener = onValue(ref(db, `games/${currentGameID}`), (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
         
