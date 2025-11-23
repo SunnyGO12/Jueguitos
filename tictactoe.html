@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe | Dashboard de Juegos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav id="dashboard-nav">
+        <div class="dashboard-header">
+            <h2>🎮 Juegos</h2>
+        </div>
+        <ul class="dashboard-menu">
+            <li><a href="index.html">Wordle para Dos</a></li>
+            <li><a href="tictactoe.html" class="active">Tic-Tac-Toe</a></li>
+            <li><a href="minesweeper.html">Buscaminas</a></li>
+            <li><a href="chess.html">Ajedrez</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+        <button id="dark-mode-toggle">🌙</button>
+        <div id="toast-container"></div>
+        
+        <div id="tictactoe-game-area">
+            <h1>Tic-Tac-Toe (Tres en Raya)</h1>
+            
+            <div id="tictactoe-lobby-container" class="lobby-container">
+                <h2>¡Únete a la Acción!</h2>
+                <div class="lobby-section">
+                    <h3>Crear o Unirse</h3>
+                    <p>Sé el primero y juega con 'X', o únete a un código para ser 'O'.</p>
+                    <button id="tictactoe-create-btn">Crear Partida de X</button>
+                </div>
+                <div class="lobby-section">
+                    <input type="text" id="tictactoe-join-input" placeholder="Código de 5 letras" maxlength="5">
+                    <button id="tictactoe-join-btn">Unirse</button>
+                </div>
+                <div id="tictactoe-code-display" class="hidden">
+                    <p>Código:</p>
+                    <h3 class="room-code-display tictactoe-code">XXXXX</h3>
+                    <p>Esperando a que el jugador 'O' se una...</p>
+                </div>
+            </div>
+
+            <div id="tictactoe-game-container" class="hidden">
+                <h3 id="tictactoe-status">Esperando turno...</h3>
+                
+                <div id="tictactoe-board">
+                    <div class="tictactoe-cell" data-row="0" data-col="0"></div>
+                    <div class="tictactoe-cell" data-row="0" data-col="1"></div>
+                    <div class="tictactoe-cell" data-row="0" data-col="2"></div>
+                    
+                    <div class="tictactoe-cell" data-row="1" data-col="0"></div>
+                    <div class="tictactoe-cell" data-row="1" data-col="1"></div>
+                    <div class="tictactoe-cell" data-row="1" data-col="2"></div>
+                    
+                    <div class="tictactoe-cell" data-row="2" data-col="0"></div>
+                    <div class="tictactoe-cell" data-row="2" data-col="1"></div>
+                    <div class="tictactoe-cell" data-row="2" data-col="2"></div>
+                </div>
+                <button id="tictactoe-reset-btn" class="hidden">Volver al Lobby</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="tictactoe.js" type="module"></script> 
+</body>
+</html>
